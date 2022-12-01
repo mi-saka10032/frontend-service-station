@@ -1,75 +1,66 @@
 import { hopeTheme } from "vuepress-theme-hope";
-import { enNavbar } from "./navbar/index.js";
-import { enSidebar } from "./sidebar/index.js";
+import { coreNavbar } from "./navbar";
+import { coreSidebar } from "./sidebar";
 
 export default hopeTheme({
-  hostname: "https://vuepress-theme-hope-docs-demo.netlify.app",
+  hostname: "http://localhost:8080",
 
   author: {
-    name: "Mr.Hope",
-    url: "https://mrhope.site",
+    name: "Misaka10032",
+    url: "https://github.com/mi-saka10032?tab=repositories",
+    email: "misaka10032@aliyun.com",
   },
 
   iconAssets: "iconfont",
 
   logo: "/misaka10032.png",
 
-  repo: "vuepress-theme-hope/vuepress-theme-hope",
+  repo: "mi-saka10032/frontend-service-station",
+
+  repoDisplay: true,
 
   docsDir: "demo/theme-docs/src",
 
   pageInfo: ["Author", "Original", "Date", "Category", "Tag", "ReadingTime"],
 
-  locales: {
-    "/": {
-      // navbar
-      navbar: enNavbar,
+  navbar: coreNavbar,
 
-      // sidebar
-      sidebar: enSidebar,
+  sidebar: coreSidebar,
 
-      footer: "Default footer",
+  footer: "Default footer",
 
-      displayFooter: true,
+  displayFooter: false,
 
-      metaLocales: {
-        editLink: "Edit this page on GitHub",
-      },
-    },
-  },
-
-  encrypt: {
-    config: {
-      "/demo/encrypt.html": ["1234"],
-    },
+  metaLocales: {
+    editLink: "Edit this page on GitHub",
   },
 
   plugins: {
     // If you don’t need comment feature, you can remove following option
     // The following config is for demo ONLY, if you need comment feature, please generate and use your own config, see comment plugin documentation for details.
     // To avoid disturbing the theme developer and consuming his resources, please DO NOT use the following config directly in your production environment!!!!!
-    comment: {
-      /**
-       * Using Giscus
-       */
-      // provider: "Giscus",
-      // repo: "vuepress-theme-hope/giscus-discussions",
-      // repoId: "R_kgDOG_Pt2A",
-      // category: "Announcements",
-      // categoryId: "DIC_kwDOG_Pt2M4COD69",
+    // comment: {
+    //   /**
+    //    * Using Giscus
+    //    */
+    //   // provider: "Giscus",
+    //   // repo: "vuepress-theme-hope/giscus-discussions",
+    //   // repoId: "R_kgDOG_Pt2A",
+    //   // category: "Announcements",
+    //   // categoryId: "DIC_kwDOG_Pt2M4COD69",
 
-      /**
-       * Using Twikoo
-       */
-      // provider: "Twikoo",
-      // envId: "https://twikoo.ccknbc.vercel.app",
+    //   /**
+    //    * Using Twikoo
+    //    */
+    //   // provider: "Twikoo",
+    //   // envId: "https://twikoo.ccknbc.vercel.app",
 
-      /**
-       * Using Waline
-       */
-      provider: "Waline",
-      serverURL: "https://vuepress-theme-hope-comment.vercel.app",
-    },
+    //   /**
+    //    * Using Waline
+    //    */
+    //   provider: "Waline",
+    //   serverURL: "https://vuepress-theme-hope-comment.vercel.app",
+    // },
 
     // Disable features you don’t want here
     mdEnhance: {
@@ -79,7 +70,7 @@ export default hopeTheme({
       codetabs: true,
       container: true,
       demo: true,
-      echarts: true,
+      echarts: false,
       flowchart: true,
       gfm: true,
       imageLazyload: true,
@@ -120,61 +111,18 @@ export default hopeTheme({
       cacheHTML: true,
       cachePic: true,
       appendBase: true,
-      apple: {
-        icon: "/assets/icon/apple-icon-152.png",
-        statusBarColor: "black",
-      },
-      msTile: {
-        image: "/assets/icon/ms-icon-144.png",
-        color: "#ffffff",
-      },
       manifest: {
         icons: [
           {
-            src: "/assets/icon/chrome-mask-512.png",
+            src: "/misaka10032.png",
             sizes: "512x512",
             purpose: "maskable",
             type: "image/png",
-          },
-          {
-            src: "/assets/icon/chrome-mask-192.png",
-            sizes: "192x192",
-            purpose: "maskable",
-            type: "image/png",
-          },
-          {
-            src: "/assets/icon/chrome-512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "/assets/icon/chrome-192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-        ],
-        shortcuts: [
-          {
-            name: "Demo",
-            short_name: "Demo",
-            url: "/demo/",
-            icons: [
-              {
-                src: "/assets/icon/guide-maskable.png",
-                sizes: "192x192",
-                purpose: "maskable",
-                type: "image/png",
-              },
-              {
-                src: "/assets/icon/guide-monochrome.png",
-                sizes: "192x192",
-                purpose: "monochrome",
-                type: "image/png",
-              },
-            ],
           },
         ],
       },
     },
+
+    photoSwipe: true,
   },
 });

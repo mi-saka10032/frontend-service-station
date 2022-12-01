@@ -1,10 +1,10 @@
 ---
 home: true
 icon: home
-title: 主页
+title: 首页
 heroImage: /misaka10032.png
 heroText: 前端加油站
-tagline: 前端笔记文档记录，不断学习中……
+tagline: 前端笔记文档记录，不断学习&持续更新中……
 actions:
   - text: 使用指南
     link: /demo/

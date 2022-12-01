@@ -4,12 +4,14 @@ specifiers:
   '@vuepress/client': 2.0.0-beta.53
   vue: ^3.2.45
   vuepress: 2.0.0-beta.53
+  vuepress-plugin-photo-swipe: 2.0.0-beta.132
   vuepress-theme-hope: 2.0.0-beta.131
 
 devDependencies:
   '@vuepress/client': registry.npmmirror.com/@vuepress/client/2.0.0-beta.53
   vue: registry.npmmirror.com/vue/3.2.45
   vuepress: registry.npmmirror.com/vuepress/2.0.0-beta.53_54nmke4n2vj3tdp5cd33kvtiom
+  vuepress-plugin-photo-swipe: registry.npmmirror.com/vuepress-plugin-photo-swipe/2.0.0-beta.132_vuepress@2.0.0-beta.53
   vuepress-theme-hope: registry.npmmirror.com/vuepress-theme-hope/2.0.0-beta.131_vuepress@2.0.0-beta.53
 
 packages:
@@ -1838,7 +1840,7 @@ packages:
     name: '@types/sax'
     version: 1.2.4
     dependencies:
-      '@types/node': registry.npmmirror.com/@types/node/17.0.45
+      '@types/node': registry.npmmirror.com/@types/node/18.11.9
     dev: true
 
   registry.npmmirror.com/@types/trusted-types/2.0.2:
@@ -6448,6 +6450,41 @@ packages:
       - supports-color
     dev: true
 
+  registry.npmmirror.com/vuepress-plugin-photo-swipe/2.0.0-beta.132_vuepress@2.0.0-beta.53:
+    resolution: {integrity: sha512-Ul8v5+e3rUGvN8lAv0nHcZBfcabmSXiGrYtiUZUoLetNJGPM58hhKsG7eDrUeEXpAjFubZC7tRWtNvGOTI+KEA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/vuepress-plugin-photo-swipe/-/vuepress-plugin-photo-swipe-2.0.0-beta.132.tgz}
+    id: registry.npmmirror.com/vuepress-plugin-photo-swipe/2.0.0-beta.132
+    name: vuepress-plugin-photo-swipe
+    version: 2.0.0-beta.132
+    engines: {node: ^14.17.0 || >=16.0.0, npm: '>=8', pnpm: '>=7'}
+    peerDependencies:
+      sass-loader: ^13.2.0
+      vuepress: 2.0.0-beta.53
+      vuepress-vite: 2.0.0-beta.53
+      vuepress-webpack: 2.0.0-beta.53
+    peerDependenciesMeta:
+      sass-loader:
+        optional: true
+      vuepress:
+        optional: true
+      vuepress-vite:
+        optional: true
+      vuepress-webpack:
+        optional: true
+    dependencies:
+      '@vuepress/client': registry.npmmirror.com/@vuepress/client/2.0.0-beta.53
+      '@vuepress/utils': registry.npmmirror.com/@vuepress/utils/2.0.0-beta.53
+      '@vueuse/core': registry.npmmirror.com/@vueuse/core/9.6.0_vue@3.2.45
+      photoswipe: registry.npmmirror.com/photoswipe/5.3.4
+      vue: registry.npmmirror.com/vue/3.2.45
+      vue-router: registry.npmmirror.com/vue-router/4.1.6_vue@3.2.45
+      vuepress: registry.npmmirror.com/vuepress/2.0.0-beta.53_54nmke4n2vj3tdp5cd33kvtiom
+      vuepress-plugin-sass-palette: registry.npmmirror.com/vuepress-plugin-sass-palette/2.0.0-beta.132_vuepress@2.0.0-beta.53
+      vuepress-shared: registry.npmmirror.com/vuepress-shared/2.0.0-beta.132
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+      - supports-color
+    dev: true
+
   registry.npmmirror.com/vuepress-plugin-pwa2/2.0.0-beta.131_vuepress@2.0.0-beta.53:
     resolution: {integrity: sha512-KJWwLqpoEETaZVGISrI0pi/r0WL6burWNom/nhNTNS3ebxLpo+VkbKY6SyEwZT4NqF/VMoCfvnijGx1De3x2xw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/vuepress-plugin-pwa2/-/vuepress-plugin-pwa2-2.0.0-beta.131.tgz}
     id: registry.npmmirror.com/vuepress-plugin-pwa2/2.0.0-beta.131
@@ -6541,6 +6578,36 @@ packages:
       - supports-color
     dev: true
 
+  registry.npmmirror.com/vuepress-plugin-sass-palette/2.0.0-beta.132_vuepress@2.0.0-beta.53:
+    resolution: {integrity: sha512-9MHAYABLKoMKpwth48WCqrflWqdxZMY6HIPqcYowjqI9s+Oxdt+eUcw9qivzZCJz2Wc60QUCYrwd/ggX6xQC0w==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/vuepress-plugin-sass-palette/-/vuepress-plugin-sass-palette-2.0.0-beta.132.tgz}
+    id: registry.npmmirror.com/vuepress-plugin-sass-palette/2.0.0-beta.132
+    name: vuepress-plugin-sass-palette
+    version: 2.0.0-beta.132
+    engines: {node: ^14.17.0 || >=16.0.0, npm: '>=8', pnpm: '>=7'}
+    peerDependencies:
+      sass-loader: ^13.2.0
+      vuepress: 2.0.0-beta.53
+      vuepress-vite: 2.0.0-beta.53
+      vuepress-webpack: 2.0.0-beta.53
+    peerDependenciesMeta:
+      sass-loader:
+        optional: true
+      vuepress:
+        optional: true
+      vuepress-vite:
+        optional: true
+      vuepress-webpack:
+        optional: true
+    dependencies:
+      '@vuepress/utils': registry.npmmirror.com/@vuepress/utils/2.0.0-beta.53
+      chokidar: registry.npmmirror.com/chokidar/3.5.3
+      sass: registry.npmmirror.com/sass/1.56.1
+      vuepress: registry.npmmirror.com/vuepress/2.0.0-beta.53_54nmke4n2vj3tdp5cd33kvtiom
+      vuepress-shared: registry.npmmirror.com/vuepress-shared/2.0.0-beta.132
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
   registry.npmmirror.com/vuepress-plugin-seo2/2.0.0-beta.131_vuepress@2.0.0-beta.53:
     resolution: {integrity: sha512-n7cp1JmDCEfN1Z2plPWAFu5vJMXXXDLhBF57bAg+aL+ILscUeELRw6YxYMp8tnbN4JBJ/jziiKkLrD8lBpQchA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/vuepress-plugin-seo2/-/vuepress-plugin-seo2-2.0.0-beta.131.tgz}
     id: registry.npmmirror.com/vuepress-plugin-seo2/2.0.0-beta.131
@@ -6599,6 +6666,26 @@ packages:
     resolution: {integrity: sha512-W8Ji7tJW3voCUIF5qS3/rhmfEJrDE9C5rZR1+W32QkiJ56d58sv7ujGHRhonoo91IUpMs63a0vNSbR2p1RlOhQ==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/vuepress-shared/-/vuepress-shared-2.0.0-beta.131.tgz}
     name: vuepress-shared
     version: 2.0.0-beta.131
+    dependencies:
+      '@vuepress/client': registry.npmmirror.com/@vuepress/client/2.0.0-beta.53
+      '@vuepress/plugin-git': registry.npmmirror.com/@vuepress/plugin-git/2.0.0-beta.53
+      '@vuepress/shared': registry.npmmirror.com/@vuepress/shared/2.0.0-beta.53
+      '@vuepress/utils': registry.npmmirror.com/@vuepress/utils/2.0.0-beta.53
+      dayjs: registry.npmmirror.com/dayjs/1.11.6
+      execa: registry.npmmirror.com/execa/6.1.0
+      fflate: registry.npmmirror.com/fflate/0.7.4
+      ora: registry.npmmirror.com/ora/6.1.2
+      striptags: registry.npmmirror.com/striptags/3.2.0
+      vue: registry.npmmirror.com/vue/3.2.45
+      vue-router: registry.npmmirror.com/vue-router/4.1.6_vue@3.2.45
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  registry.npmmirror.com/vuepress-shared/2.0.0-beta.132:
+    resolution: {integrity: sha512-murDGRAQ4zVYScrBF89F0O1A2KCs1O8UyyTx5XF4qQBMoMjlNbJzOsEU9UgUlEdVZ+UVl9tGuHJD/FqAQufaBA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/vuepress-shared/-/vuepress-shared-2.0.0-beta.132.tgz}
+    name: vuepress-shared
+    version: 2.0.0-beta.132
     dependencies:
       '@vuepress/client': registry.npmmirror.com/@vuepress/client/2.0.0-beta.53
       '@vuepress/plugin-git': registry.npmmirror.com/@vuepress/plugin-git/2.0.0-beta.53
