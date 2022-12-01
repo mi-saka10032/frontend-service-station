@@ -1,0 +1,5 @@
+
+User-agent:*
+Disallow:
+
+Sitemap: http://localhost:8080/frontend-service-station/sitemap.xml
