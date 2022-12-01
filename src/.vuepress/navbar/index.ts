@@ -22,5 +22,5 @@ export const coreNavbar = navbar([
       },
     ],
   },
-  { text: "基础三剑客", icon: "enum", link: "/base/" },
+  { text: "基础", icon: "enum", link: "/base/" },
 ]);

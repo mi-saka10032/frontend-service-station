@@ -19,7 +19,29 @@ export const coreSidebar = sidebar({
       text: "前端三剑客",
       icon: "enum",
       prefix: "base/",
-      children: "structure",
+      children: [
+        {
+          text: "HTML",
+          icon: "html",
+          prefix: "html/",
+          collapsible: true,
+          children: "structure",
+        },
+        {
+          text: "CSS",
+          icon: "css",
+          prefix: "css/",
+          collapsible: true,
+          children: "structure",
+        },
+        {
+          text: "Javascript",
+          icon: "javascript",
+          prefix: "javascript/",
+          collapsible: true,
+          children: "structure",
+        },
+      ],
     },
   ],
 });
