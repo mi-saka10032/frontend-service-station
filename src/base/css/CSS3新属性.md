@@ -235,18 +235,6 @@ h1:after {
 }
 ```
 
-## 怪异盒模型 border-box
-
-CSS 两种通过 box-sizing 来指定盒模型，content-box / border-box，计算盒子大小的方式因此改变。
-
-浏览器默认使用 content-box 盒模型。
-
-- box-sizing:content-box 盒子大小为 width/height + padding + border（默认）
-
-- box-sizing:border-box 盒子大小为 width/height
-
-如果盒子模型我们改为 box-sizing: border-box，那么 padding 和 border 就不会撑大盒子了（前提 padding 和 border 不会超过 width/height）
-
 ## 滤镜 filter
 
 filter CSS 属性将模糊或颜色偏移等图形效果应用于元素
@@ -294,6 +282,151 @@ calc()让你在声明 CSS 属性值时执行一些计算。括号里允许四则
 /* 此处宽度为元素继承父容器的宽度的100%减去80px后的结果 */
 width: calc(100% - 80px);
 ```
+
+## 背景线性渐变 linear-gradient
+
+创建一个线性渐变，需要指定两种颜色，还可以实现不同方向（指定为一个角度）的渐变效果，如果不指定方向，默认从上到下渐变。
+
+```css
+/* 从上到下，蓝色渐变到红色 */
+background-image: linear-gradient(blue, red);
+
+/* 渐变轴为45度，从蓝色渐变到红色 */
+background-image: linear-gradient(45deg, blue, red);
+
+/* 从右下到左上、从蓝色渐变到红色 */
+background-image: linear-gradient(to left top, blue, red);
+
+/* 从下到上，从蓝色开始渐变、到高度40%位置是绿色渐变开始、最后以红色结束 */
+background-image: linear-gradient(0deg, blue, green 40%, red);
+```
+
+- 起始方向可以是：方位名词 或者 度数，如果省略默认就是 top。
+
+- 背景渐变必须加浏览器私有前缀（不加前缀的方法：括号内方向位置加(to left top)。
+
+```css
+background-image: linear-gradient(blue, red);
+background-image: -webkit-linear-gradient(left, blue, red);
+background-image: -webkit-linear-gradient(left top, blue, red);
+```
+
+linear-gradient 非常灵活强大，可以实现很多效果如渐变花纹、进度条等（配合动画使用）。
+
+::: normal-demo 方格背景
+
+```html
+<div class="grid"></div>
+```
+
+```css
+.grid {
+  height: 63px;
+  background-image: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.3) 10%,
+      rgba(0, 0, 0, 0) 10%
+    ), linear-gradient(rgba(0, 0, 0, 0.3) 10%, rgba(0, 0, 0, 0) 10%);
+  background-size: 30px 30px;
+  background-color: white;
+}
+```
+
+:::
+
+::: normal-demo 棋盘背景
+
+```html
+<div class="checkerboard"></div>
+```
+
+```css
+.checkerboard {
+  height: 60px;
+  background-image: linear-gradient(45deg, #ccc 25%, transparent 0),
+    linear-gradient(45deg, transparent 75%, #ccc 0), linear-gradient(
+      45deg,
+      #ccc 25%,
+      transparent 0
+    ), linear-gradient(45deg, transparent 75%, #ccc 0);
+  background-position: 0 0, -15px 15px, 15px -15px, 30px 30px;
+  background-size: 30px 30px;
+  background-color: white;
+}
+```
+
+:::
+
+::: normal-demo 虚线背景
+
+```html
+<div class="dotted"></div>
+```
+
+```css
+.dotted {
+  height: 1px;
+  background-image: linear-gradient(to right, gray, gray 10px, transparent 0);
+  background-size: 20px 100%;
+}
+```
+
+:::
+
+::: normal-demo 进度条
+
+```html
+<div class="process"></div>
+```
+
+```css
+.process {
+  height: 20px;
+  background: repeating-linear-gradient(
+    45deg,
+    #30e8bf 25%,
+    #ff8235 0,
+    #ff8235 50%,
+    #30e8bf 0,
+    #30e8bf 75%,
+    #ff8235 0
+  );
+  background-size: 30px 30px;
+  animation: roll 1s linear infinite;
+}
+@keyframes roll {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: 30px;
+  }
+}
+```
+
+:::
+
+## 鼠标样式 cursor
+
+| 值        | 描述                                                                                                            |
+| :-------- | :-------------------------------------------------------------------------------------------------------------- |
+| url       | 需使用的自定义光标的 URL。<br>注释：请在此列表的末端始终定义一种普通的光标，<br>以防没有由 URL 定义的可用光标。 |
+| default   | 默认光标（通常是一个箭头）                                                                                      |
+| auto      | 默认。浏览器设置的光标。                                                                                        |
+| crosshair | 光标呈现为十字线。                                                                                              |
+| pointer   | 光标呈现为指示链接的指针（一只手）                                                                              |
+| move      | 此光标指示某对象可被移动。                                                                                      |
+| e-resize  | 此光标指示矩形框的边缘可被向右（东）移动。                                                                      |
+| ne-resize | 此光标指示矩形框的边缘可被向上及向右移动（北/东）。                                                             |
+| nw-resize | 此光标指示矩形框的边缘可被向上及向左移动（北/西）。                                                             |
+| n-resize  | 此光标指示矩形框的边缘可被向上（北）移动。                                                                      |
+| se-resize | 此光标指示矩形框的边缘可被向下及向右移动（南/东）。                                                             |
+| sw-resize | 此光标指示矩形框的边缘可被向下及向左移动（南/西）。                                                             |
+| s-resize  | 此光标指示矩形框的边缘可被向下移动（南）。                                                                      |
+| w-resize  | 此光标指示矩形框的边缘可被向左移动（西）。                                                                      |
+| text      | 此光标指示文本。                                                                                                |
+| wait      | 此光标指示程序正忙（通常是一只表或沙漏）。                                                                      |
+| help      | 此光标指示可用的帮助（通常是一个问号或一个气球）。                                                              |
 
 ## 2D 转换（重要）
 
