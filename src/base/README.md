@@ -1,12 +1,13 @@
 ---
-title: 基础三剑客
+title: 前端三剑客
+icon: enum
 index: false
 category:
   - 前端基础
 ---
 
-- [HTML](html/README.md)
+- [HTML](html/HTML基础.md)
 
-- [CSS](css/README.md)
+- [CSS](css/CSS基础.md)
 
 - [Javascript](javascript/README.md)

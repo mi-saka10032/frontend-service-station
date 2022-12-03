@@ -1,6 +1,6 @@
 ---
 title: CSS属性
-order: 2
+order: 3
 category: false
 tag:
   - CSS属性
@@ -355,15 +355,14 @@ outset：根据 border-color 值画 3D 凸边
 
 语法：box-shadow: h-shadow v-shadow blur spread color inset;
 
-| 值 | 描述 |
-| :---- | :---- |
-| h-shadow | 必需。水平阴影的位置，允许负值 |
-| v-shadow | 必需。垂直阴影的位置，允许负值 |
-| blur | 可选。模糊距离 |
-| spread | 可选。阴影的尺寸 |
-| color | 可选。阴影的颜色，参阅CSS颜色值 |
-| inset | 可选。将外部阴影(默认值outset)改为内部阴影 |
-
+| 值       | 描述                                        |
+| :------- | :------------------------------------------ |
+| h-shadow | 必需。水平阴影的位置，允许负值              |
+| v-shadow | 必需。垂直阴影的位置，允许负值              |
+| blur     | 可选。模糊距离                              |
+| spread   | 可选。阴影的尺寸                            |
+| color    | 可选。阴影的颜色，参阅 CSS 颜色值           |
+| inset    | 可选。将外部阴影(默认值 outset)改为内部阴影 |
 
 ### 文字阴影 text-shadow
 
@@ -371,9 +370,42 @@ outset：根据 border-color 值画 3D 凸边
 
 **多重阴影**：阴影属性之间用 逗号 隔开
 
-| 值 | 描述 |
+| 值       | 描述                              |
+| :------- | :-------------------------------- |
+| h-shadow | 必需。水平阴影的位置，允许负值    |
+| v-shadow | 必需。垂直阴影的位置，允许负值    |
+| blur     | 可选。模糊距离                    |
+| color    | 可选。阴影的颜色，参阅 CSS 颜色值 |
+
+## 7.元素显示与隐藏
+
+本质：让一个元素在页面中隐藏或者显示出来。
+
+- display 显示隐藏
+
+display 隐藏元素后，不再占有原来的位置。
+
+后面应用极其广泛，搭配 JS 可以做很多的网页特效。
+
+- visibility 显示隐藏
+
+visibility 属性用于指定一个元素应可见还是隐藏。
+
+visibility: visible; 元素可视
+
+visibility: hidden; 元素隐藏
+
+visibility 隐藏元素后，继续占有原来的位置。
+
+- overflow溢出显示隐藏
+
+指定了如果内容溢出了一个元素的框（超过其指定高度及宽度时），超出部分隐藏 overflow: hidden。
+
+如果有定位的盒子，请慎用overflow: hidden 因为它会隐藏多余部分
+
+| 属性值 | 描述 |
 | :---- | :---- |
-| h-shadow | 必需。水平阴影的位置，允许负值 |
-| v-shadow | 必需。垂直阴影的位置，允许负值 |
-| blur | 可选。模糊距离 |
-| color | 可选。阴影的颜色，参阅CSS颜色值 |
+| visible | 不剪切内容也不添加滚动条 |
+| hidden | 不显示超过对象尺寸的内容，超出的部分隐藏 |
+| scroll | 不管超出内容否，始终显示滚动条 |
+| auto | 超出自动显示滚动条，不超出则不显示 |
