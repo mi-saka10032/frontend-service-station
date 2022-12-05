@@ -2,7 +2,8 @@ name: Sync
 
 on:
   push:
-    branches: [master, gh-pages]
+    # 在github工作流使用命令将master中的内容打包push至gh-pages分支时触发，同步到gitee并部署gh-pages分支
+    branches: [gh-pages]
   workflow_dispatch:
 
 jobs:
