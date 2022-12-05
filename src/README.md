@@ -24,6 +24,11 @@ features:
     icon: css
     details: CSS基础、CSS属性、CSS特性、页面布局与移动端布局
     link: /base/css/CSS基础.md
+
+  - title: Javascript
+    icon: javascript
+    details: JS基础
+    link: /base/javascript/Javascript基础.md
 copyright: false
 footer: false
 ---
