@@ -19,16 +19,15 @@ jobs:
           source-repo: git@github.com:mi-saka10032/frontend-service-station.git
           # 注意替换为你的 Gitee 目标仓库地址
           destination-repo: git@gitee.com:mi-sa-ka10032/frontend-service-station.git
-
-      # Gitee Pages 待验证    
-      #- name: 部署Gitee Pages
-        #uses: yanglbme/gitee-pages-action@main
-        #with:
-          # 注意替换为你的 Gitee 用户名
-          #gitee-username: mi-sa-ka10032
-          # 注意在 Settings->Secrets 配置 GITEE_PASSWORD
-          #gitee-password: ${{ secrets.GITEE_PASSWORD }}
-          # 注意替换为你的 Gitee 仓库，仓库名严格区分大小写，请准确填写，否则会出错
-          #gitee-repo: frontend-service-station
-          # 要部署的分支，默认是 master，若是其他分支，则需要指定（指定的分支必须存在）
-          #branch: gh-pages
+   
+      - name: 部署Gitee Pages
+        uses: yanglbme/gitee-pages-action@main
+        with:
+          #注意替换为你的 Gitee 用户名
+          gitee-username: mi-sa-ka10032
+          #注意在 Settings->Secrets 配置 GITEE_PASSWORD
+          gitee-password: ${{ secrets.GITEE_PASSWORD }}
+          #注意替换为你的 Gitee 仓库，仓库名严格区分大小写，请准确填写，否则会出错
+          gitee-repo: frontend-service-station
+          #要部署的分支，默认是 master，若是其他分支，则需要指定（指定的分支必须存在）
+          branch: gh-pages
