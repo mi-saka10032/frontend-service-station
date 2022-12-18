@@ -27,8 +27,18 @@ features:
 
   - title: Javascript
     icon: javascript
-    details: JS基础
+    details: JS基础、正则、DOM、BOM、高阶、ES6+
     link: /base/javascript/Javascript基础.md
+
+  - title: AJAX
+    icon: ajax
+    details: AJAX、HTTP协议、axios
+    link: /ajax/AJAX.md
+
+  - title: Git
+    icon: git
+    details: Git
+    link: /git.md
 copyright: false
 footer: false
 ---
