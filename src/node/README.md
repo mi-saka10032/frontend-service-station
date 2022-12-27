@@ -1,6 +1,6 @@
 ---
 title: Node
-icon: node
+icon: nodeJS
 index: false
 category:
   - AJAX
