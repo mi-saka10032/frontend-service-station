@@ -6,8 +6,8 @@ category:
   - 前端基础
 ---
 
-- [HTML](html/HTML基础.md)
+- [HTML](./html/HTML基础.html)
 
-- [CSS](css/CSS基础.md)
+- [CSS](./css/CSS基础.html)
 
-- [Javascript](javascript/README.md)
+- [Javascript](./javascript/README.html)
