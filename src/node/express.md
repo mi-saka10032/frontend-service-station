@@ -228,7 +228,6 @@ app.listen(8000, () => {
 
 如果当前目录下的 build 文件夹中存在 index.html 文件，那么可以直接通过地址栏 `http://localhost:8000/index.html` 加载出这个文件中的内容
 
-
 ## 错误统一处理
 
 在中间件或路由中通过 `next(new Error('message信息'))`向外抛出异常
@@ -237,11 +236,11 @@ app.listen(8000, () => {
 app.use((err, req, res, next) => {
   const message = err.message;
 
-  switch(message) {
-    case 'USER DOES NOT EXISTS':
-      res.stats(400).json({ message })
+  switch (message) {
+    case "USER DOES NOT EXISTS":
+      res.stats(400).json({ message });
   }
 
-  res.status(500)
-})
+  res.status(500);
+});
 ```
