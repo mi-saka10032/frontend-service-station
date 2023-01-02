@@ -1,1 +1,0 @@
-import{_ as e}from"./_plugin-vue_export-helper.cdc0426e.js";import{o,c as t,b as c}from"./app.77d60267.js";const n={},_=c("p",null,"这是Node",-1),s=[_];function r(a,l){return o(),t("div",null,s)}const f=e(n,[["render",r],["__file","index.html.vue"]]);export{f as default};
