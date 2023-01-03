@@ -112,7 +112,7 @@ app.use((ctx, next) => {
 
 body 是 json 格式
 
-{ "username": "why", "password": "123" }
+`{ "username": "why", "password": "123" }`
 
 获取 json 数据：
 
@@ -139,7 +139,7 @@ body 是 x-www-form-urlencoded 格式，获取方法和 json 相同，需要安�
 
 FormData 格式对象：
 
-{ username: 'lilei', password: '8888' }
+`{ username: 'lilei', password: '8888' }`
 
 解析 body 中的数据，需要使用 multer
 

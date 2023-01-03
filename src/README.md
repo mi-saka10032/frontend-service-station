@@ -44,6 +44,11 @@ features:
     icon: nodeJS
     details: Node、模块化、EventLoop、express、koa、mysql
     link: /node/Node引擎.md
+
+  - title: Webpack
+    icon: waline
+    details: Webpack、Webpack基础与进阶配置、构建优化
+    link: /webpack/preface.md
 copyright: false
 footer: false
 ---

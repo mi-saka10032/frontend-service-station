@@ -303,7 +303,7 @@ ALTER TABLE `moment` MODIFY `id` INT;
 #### 插入新数据
 
 ```sql
-INSERT INTO `products` (`title`, `description`, `price`, `publishTime`) 
+INSERT INTO `products` (`title`, `description`, `price`, `publishTime`)
 VALUES ('iPhone', 'iPhone12只要998', 998.88, '2020-10-10');
 ```
 
@@ -319,8 +319,8 @@ DELETE FROM `products` WHERE `title` = 'iPhone';
 #### 修改完数据显示最新更新时间
 
 ```sql
-ALTER TABLE `products` ADD `updateTime` TIMESTAMP 
-					DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP; 
+ALTER TABLE `products` ADD `updateTime` TIMESTAMP
+					DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 ```
 
 #### 修改表中所有的数据
@@ -337,7 +337,7 @@ UPDATE `products`  SET `title` = 'iPhone12', `price` = 1299.88 WHERE `title` = '
 
 ### DQL
 
-SELECT用于从一个或者多个表中检索选中的行（Record）
+SELECT 用于从一个或者多个表中检索选中的行（Record）
 
 查询的格式如下：
 
@@ -359,13 +359,13 @@ SELECT select_expr [, select_expr]...
 SELECT * FROM `products`;
 ```
 
-查询title、brand、price
+查询 title、brand、price
 
 ```sql
 SELECT title, brand, price FROM `products`;
 ```
 
-给字段起别名，别名一般在多张表或者给客户端返回对应的key时会使用到
+给字段起别名，别名一般在多张表或者给客户端返回对应的 key 时会使用到
 
 ```sql
 SELECT title as t, brand as b, price as p FROM `products`
@@ -392,11 +392,11 @@ SELECT * FROM `products` WHERE price BETWEEN 1000 and 2000;
 SELECT * FROM `products` WHERE brand in ('华为', '小米');
 ```
 
-#### like关键字实现模糊查询，结合两个特殊符号
+#### like 关键字实现模糊查询，结合两个特殊符号
 
 %表示匹配任意个的任意字符
 
-_表示匹配一个的任意字符
+\_表示匹配一个的任意字符
 
 ```sql
 # 查询所有以v开头的title
@@ -411,7 +411,7 @@ SELECT * FROM `products` WHERE title LIKE '__M%';
 
 #### 结果排序
 
-ORDER BY有两个常用的值：ASC：升序排列；DESC：降序排列。
+ORDER BY 有两个常用的值：ASC：升序排列；DESC：降序排列。
 
 ```sql
 SELECT * FROM `products` WHERE brand = '华为' or price < 1000 ORDER BY price ASC;
@@ -438,8 +438,8 @@ SELECT * FROM `products` LIMIT 90, 30;
 #### Group By
 
 ```sql
-SELECT brand, 
-		COUNT(*) as count, 
+SELECT brand,
+		COUNT(*) as count,
 		ROUND(AVG(price),2) as avgPrice,
 		MAX(price) as maxPrice,
 		MIN(price) as minPrice,
@@ -449,24 +449,24 @@ FROM `products` GROUP BY brand;
 
 **约束**
 
-希望给Group By查询到的结果添加一些约束，那么我们可以使用：**HAVING**
+希望给 Group By 查询到的结果添加一些约束，那么我们可以使用：**HAVING**
 
-效果：筛选出平均价格在4000以下，并且平均分在7以上的品牌
+效果：筛选出平均价格在 4000 以下，并且平均分在 7 以上的品牌
 
 ```sql
-SELECT brand, 
-	COUNT(*) as count, 
+SELECT brand,
+	COUNT(*) as count,
 	ROUND(AVG(price),2) as avgPrice,
 	MAX(price) as maxPrice,
 	MIN(price) as minPrice,
 	AVG(score) as avgScore
-	FROM `products` GROUP BY brand 
+	FROM `products` GROUP BY brand
 HAVING avgPrice < 4000 and avgScore > 7;
 ```
 
 ## 外键约束
 
-将products的brand_id和brand的id进行绑定
+将 products 的 brand_id 和 brand 的 id 进行绑定
 
 如果是创建表添加外键约束，我们需要在创建表的()最后添加如下语句
 
@@ -480,25 +480,237 @@ FOREIGN KEY (brand_id) REFERENCES brand(id)
 ALTER TABLE `products` ADD FOREIGN KEY (brand_id) REFERENCES brand(id);
 ```
 
-如果products中引用的外键被更新了或者删除了，执行代码会报错。
+如果 products 中引用的外键被更新了或者删除了，执行代码会报错。
 
 ![外键报错](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016214918127.png)
 
 ```sql
 ALTER TABLE `products` DROP FOREIGN KEY products_ibfk_1;
-ALTER TABLE `products` add FOREIGN KEY (brand_id) REFERENCES brand(id) 
-											ON UPDATE CASCADE 
+ALTER TABLE `products` add FOREIGN KEY (brand_id) REFERENCES brand(id)
+											ON UPDATE CASCADE
 											ON DELETE RESTRICT;
 ```
 
 RESTRICT（默认属性）：当更新或删除某个记录时，会检查该记录是否有关联的外键记录，有的话会报错的，不允许更新或删除；
 
-NO ACTION：和RESTRICT是一致的，是在SQL标准中定义的；
+NO ACTION：和 RESTRICT 是一致的，是在 SQL 标准中定义的；
 
 CASCADE：当更新或删除某个记录时，会检查该记录是否有关联的外键记录，有的话：
 更新：那么会更新对应的记录；
 删除：那么关联的记录会被一起删除掉；
 
-SET NULL：当更新或删除某个记录时，会检查该记录是否有关联的外键记录，有的话，将对应的值设置为NULL；
+SET NULL：当更新或删除某个记录时，会检查该记录是否有关联的外键记录，有的话，将对应的值设置为 NULL；
 
-b 
+## 多表查询
+
+```sql
+SELECT * FROM `products`, `brand`;
+```
+
+默认查询结果为 笛卡尔乘积，也称为 直积，表示为 X\*Y。
+
+大多数情况下，需要使用 table.column 进行 where 筛选。
+
+```sql
+SELECT * FROM `products`, `brand` WHERE `products`.brand_id = `brand`.id;
+```
+
+## 多表连接
+
+### 左连接
+
+![MySQL左连接1](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016232002717.png)
+
+```sql
+SELECT * FROM `products` LEFT JOIN `brand` ON `products`.brand_id = `brand`.id;
+```
+
+![MySQL左连接2](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016232018118.png)
+
+```sql
+SELECT * FROM `products` LEFT JOIN `brand` ON `products`.brand_id = `brand`.id WHERE brand.id IS NULL;
+```
+
+### 右连接
+
+没有左连接常用。
+
+![MySQLy右连接1](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016232153428.png)
+
+```sql
+SELECT * FROM `products` RIGHT JOIN `brand` ON `products`.brand_id = `brand`.id;
+```
+
+![MySQL右连接2](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016232208452.png)
+
+```sql
+SELECT * FROM `products` RIGHT JOIN `brand` ON `products`.brand_id = `brand`.id
+WHERE products.id IS NULL;
+```
+
+### 内连接
+
+![MySQL内连接1](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016232936276.png)
+
+内连接在开发中偶尔也会常见使用，看自己的场景
+
+内连接有其他的写法：CROSS JOIN 或者 JOIN 都可以
+
+```sql
+SELECT * FROM `products` INNER JOIN `brand` ON `products`.brand_id = `brand`.id;
+```
+
+```sql
+SELECT * FROM `products`, `brand` WHERE `products`.brand_id = `brand`.id;
+```
+
+这两个效果一样，但是代表含义不同：
+
+- SQL 语句一：内连接，代表的是在两张表连接时就会约束数据之间的关系，来决定之后查询的结果
+
+- SQL 语句二：where 条件，代表的是先计算出笛卡尔乘积，在笛卡尔乘积的数据基础之上进行 where 条件筛选。
+
+### 全连接
+
+SQL 规范中全连接是使用 FULL JOIN，但是 MySQL 中并没有对它的支持，我们需要使用 UNION 来实现
+
+![MySQL全连接1](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016232748724.png)
+
+```sql
+(SELECT * FROM `products` LEFT JOIN `brand` ON `products`.brand_id = `brand`.id)
+UNION
+(SELECT * FROM `products` RIGHT JOIN `brand` ON `products`.brand_id = `brand`.id);
+```
+
+![MySQL全连接2](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211016232801262.png)
+
+```sql
+(SELECT * FROM `products` LEFT JOIN `brand` ON `products`.brand_id = `brand`.id WHERE `brand`.id IS NULL)
+UNION
+(SELECT * FROM `products` RIGHT JOIN `brand` ON `products`.brand_id = `brand`.id WHERE `products`.id IS NULL);
+```
+
+常见的多对多查询为创建关系表，将 A 表-关系表-B 表左连接，进行查询
+
+## 查询数据转对象
+
+```sql
+SELECT products.id as id, products.title as title, products.price as price, products.score as score,
+	JSON_OBJECT('id', brand.id, 'name', brand.name, 'rank', brand.phoneRank, 'website', brand.website) as brand
+FROM products LEFT JOIN brand ON products.brand_id = brand.id;
+```
+
+![查询数据转对象](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Node/12-mysql/image-20211017112126810.png)
+
+在多对多关系中，我们希望查询到的是一个数组
+
+比如一个学生的多门课程信息，应该是放到一个数组中的；数组中存放的是课程信息的一个个对象；这个时候我们要 JSON_ARRAYAGG 和 JSON_OBJECT 结合来使用。
+
+```sql
+SELECT stu.id, stu.name, stu.age,
+				JSON_ARRAYAGG(JSON_OBJECT('id', cs.id, 'name', cs.name)) as courses
+FROM students stu
+LEFT JOIN students_select_courses ssc ON stu.id = ssc.student_id
+LEFT JOIN courses cs ON ssc.course_id = cs.id
+GROUP BY stu.id;
+```
+
+## Node-mysql2
+
+### 简介
+
+- 更快/更好的性能
+
+- 预编译语句（Prepared Statement）：.
+
+  提高性能：将创建的语句模块发送给 MySQL，然后 MySQL 编译（解析、优化、转换）语句模块，并且存储它但是不执行，之后我们在真正执行时会给?提供实际的参数才会执行；就算多次执行，也只会编译一次，所以性能是更高的
+
+  防止 SQL 注入：之后传入的值不会像模块引擎那样就编译，那么一些 SQL 注入的内容不会被执行；or 1 = 1 不会被执行
+
+- 支持 Promise，所以我们可以使用 async 和 await 语法
+
+### 创建步骤
+
+第一步：创建连接（通过 createConnection），并且获取连接对象；
+
+第二步：执行 SQL 语句即可（通过 query）。
+
+```js
+const mysql = require("mysql2");
+
+// 创建连接
+const conn = mysql.createConnection({
+  host: "localhost",
+  database: "coderhub",
+  user: "root",
+  password: "why888.",
+});
+
+// 执行SQL语句
+conn.query("SELECT * FROM products;", (err, results, fields) => {
+  console.log(err);
+  console.log(results);
+  console.log(fields);
+  conn.destroy();
+});
+```
+
+### 预编译语句
+
+```js
+const statement = "SELECT * FROM products WHERE price > ? and brand = ?;";
+conn.execute(statement, [1000, "华为"], (err, results) => {
+  console.log(results);
+});
+```
+
+如果再次执行该语句，它将会从 LRU（Least Recently Used） Cache 中获取获取，省略了编译 statement 的时间来提高性能
+
+### 连接池
+
+前面我们是创建了一个连接（connection），但是如果我们有多个请求的话，该连接很有可能正在被占用，那么我们是否需要每次一个请求都去创建一个新的连接呢？
+
+- 事实上，mysql2 给我们提供了连接池（connection pools）
+- 连接池可以在需要的时候自动创建连接，并且创建的连接不会被销毁，会放到连接池中，后续可以继续使用
+
+- 我们可以在创建连接池的时候设置 LIMIT，也就是最大创建个数。
+
+### Promise 写法
+
+在 JavaScript 开发中我们更习惯 Promise 和 await、async 的方式，mysql2 同样是支持的
+
+```sql
+const mysql = require("mysql2");
+const pool = mysql.createPool({
+    host: 'localhost',
+    port: 3306,
+    database: 'yzh',
+    user: 'root',
+    password: 'Yzh123456.'
+});
+const statement = `SELECT * FROM products WHERE price > ?;`;
+pool.promise().execute(statement, ['6000']).then(([results, fields]) => {
+    for (const field of fields) {
+        console.log(field.name);
+    }
+    pool.end();
+});
+```
+
+### ORM
+
+对象关系映射（英语：Object Relational Mapping，简称 ORM，或 O/RM，或 O/R mapping），是一种程序设计的方案：
+
+从效果上来讲，它提供了一个可在编程语言中，使用**虚拟对象数据库**的效果
+
+比如在 Java 开发中经常使用的 ORM 包括：Hibernate、MyBatis
+
+Node 当中的 ORM 我们通常使用的是 sequelize。
+
+[Sequelize](https://www.sequelize.cn/) 是用于 Postgres，MySQL，MariaDB，SQLite 和 Microsoft SQL Server 的基于 Node.js 的 ORM，它支持非常多的功能。
+
+如果我们希望将 Sequelize 和 MySQL 一起使用，那么我们需要先安装两个东西
+
+1. mysql2：sequelize 在操作 mysql 时使用的是 mysql2；
+
+2. sequelize：使用它来让对象映射到表中。
