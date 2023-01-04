@@ -49,6 +49,11 @@ features:
     icon: view
     details: Webpack、Webpack基础与进阶配置、构建优化
     link: /webpack/preface.md
+
+  - title: Typescript
+    icon: typescript
+    details: Typescript、基础类型、面向对象
+    link: /typescript/base.md
 copyright: false
 footer: false
 ---
