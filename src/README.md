@@ -46,7 +46,7 @@ features:
     link: /node/Node引擎.md
 
   - title: Webpack
-    icon: waline
+    icon: view
     details: Webpack、Webpack基础与进阶配置、构建优化
     link: /webpack/preface.md
 copyright: false

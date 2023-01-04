@@ -1,6 +1,6 @@
 ---
 title: Webpack
-icon: waline
+icon: view
 index: false
 category:
   - Webpack
