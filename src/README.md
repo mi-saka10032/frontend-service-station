@@ -10,8 +10,8 @@ actions:
     link: /base/
     type: primary
 
-  - text: 从框架开始
-    link: /
+  - text: 从Vue2框架开始
+    link: /vue2/1-简介.md
     type: primary
 
 features:
@@ -54,6 +54,11 @@ features:
     icon: typescript
     details: Typescript、基础类型、面向对象
     link: /typescript/base.md
+
+  - title: Vue2
+    icon: vue
+    details: Vue2基础、配置项、脚手架、数据劫持与依赖收集
+    link: /vue2/1-简介.md
 copyright: false
 footer: false
 ---
