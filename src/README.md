@@ -59,6 +59,11 @@ features:
     icon: vue
     details: Vue2基础、配置项、脚手架、数据劫持与依赖收集
     link: /vue2/1-简介.md
+
+  - title: Vue3
+    icon: vue
+    details: Vue3基础、Vite、组合式API、Vue3+TS+Vite
+    link: /vue3/1-简介.md
 copyright: false
 footer: false
 ---

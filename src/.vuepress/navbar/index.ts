@@ -11,4 +11,12 @@ export const coreNavbar = navbar([
       { text: "Javascript", icon: "javascript", link: "/base/javascript" },
     ],
   },
+  {
+    text: "框架",
+    icon: "frame",
+    children: [
+      { text: "Vue2", icon: "vue", link: "/vue2/1-简介" },
+      { text: "Vue3", icon: "vue", link: "/vue3/1-简介" },
+    ],
+  },
 ]);
