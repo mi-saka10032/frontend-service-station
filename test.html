@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      // 拆分表达式str，如'a.b.c.d'，会解析出嵌套对象属性的最终路径
+      function parsePath(str) {
+        var segments = str.split(".");
+        return (obj) => {
+          for (let i = 0; i < segments.length; i++) {
+            if (!obj) return;
+            obj = obj[segments[i]];
+          }
+          return obj;
+        };
+      }
+      var uid2 = 0;
+      class Watcher {
+        // target表示需要监听的目标对象
+        // expression表示监听路径，在watch配置项中，对标 '$route.path' 'place.province' 等对象的属性路径
+        // callback表示回调函数，在watch配置项中，对标handler函数
+        constructor(target, expression, callback) {
+          this.id = uid2++;
+          this.target = target;
+          // 属性层级拍平方法
+          this.getter = parsePath(expression);
+          this.callback = callback;
+          this.value = this.get();
+        }
+        update() {
+          this.run();
+        }
+        get() {
+          // 进入依赖收集，让全局的Dep.target设置为watcher本身，进入依赖收集阶段
+          // Dep.target为Watcher实例对象，dep的depend触发的时候会添加进dep的subs
+          Dep.target = this;
+          const obj = this.target;
+          var value;
+          try {
+            this.getter(obj);
+          } finally {
+            // 最后关闭target
+            Dep.target = null;
+          }
+        }
+        run() {
+          this.getAndInvoke(this.callback);
+        }
+        getAndInvoke(cb) {
+          const value = this.get();
+
+          if (value !== this.value || typeof value === "object") {
+            const oldValue = this.value;
+            this.value = value;
+            cb.call(this.target, value, oldValue);
+          }
+        }
+      }
+      var uid1 = 0;
+      class Dep {
+        constructor() {
+          this.id = uid1++;
+          // 存储订阅者数组 subscribes
+          // 数组里实际存放的是 Watcher 的实例对象
+          this.subs = [];
+        }
+        // 添加依赖
+        depend() {
+          // Dep.target 处于依赖收集阶段的判断标志
+          if (Dep.target) {
+            this.addSub(Dep.target);
+          }
+        }
+        // 添加订阅
+        addSub(sub) {
+          this.subs.push(sub);
+        }
+        // 通知更新
+        notify() {
+          // 浅拷贝
+          const subs = this.subs.slice();
+          // 遍历
+          for (let i = 0, l = subs.length; i < l; i++) {
+            // Watcher实例对象的update方法调用，更新响应式数据
+            subs[i].update();
+          }
+        }
+      }
+
+      function defineReactive(data, key, val) {
+        const dep = new Dep();
+        val = val || data[key];
+        // 定义响应式数据前，先执行一次值类型判断，如果为复杂类型，则会new Observer实例同时遍历key值进入defineReactive的递归执行，直到key的value值为基本类型为止
+        let childOb = observe(val);
+        Object.defineProperty(data, key, {
+          // 可枚举
+          enumerable: true,
+          // 可以被配置，比如可以被delete
+          configurable: true,
+          // getter
+          get() {
+            console.log(`你试图访问${key}属性`);
+            // 如果处于依赖收集阶段，调用依赖收集方法
+            if (Dep.target) {
+              dep.depend();
+              // 为何需要判断childOb？childOb指向的是当前data[key]中的val内部的子对象的dep
+              // childOb存在的情况只有一种，那就是val为复杂类型数据时，此时应该要对该复杂类型内部的dep也做一次依赖收集
+              if (childOb) {
+                childOb.dep.depend();
+              }
+            }
+            return val;
+          },
+          // setter
+          set(newValue) {
+            console.log(`你试图改变${key}属性`, newValue);
+            if (val === newValue) {
+              return;
+            }
+            val = newValue;
+            childOb = observe(newValue);
+            // 触发setter时调用notify
+            dep.notify();
+          },
+        });
+      }
+
+      const def = function (obj, key, value, enumerable) {
+        Object.defineProperty(obj, key, {
+          value,
+          enumerable,
+          writable: true,
+          configurable: true,
+        });
+      };
+
+      const arrayPrototype = Array.prototype;
+
+      const arrayMethods = Object.create(arrayPrototype);
+
+      const methodsNeedChange = [
+        "push",
+        "pop",
+        "shift",
+        "unshift",
+        "splice",
+        "sort",
+        "reverse",
+      ];
+
+      methodsNeedChange.forEach((methodName) => {
+        // 备份原来的方法
+        const original = arrayPrototype[methodName];
+        // 定义新方法
+        def(
+          arrayMethods,
+          methodName,
+          function () {
+            // 执行数组的老方法，保证原API顺利执行
+            const result = original.apply(this, arguments);
+
+            // 从顶层对象开始递归调用声明下的数组，已经完成了实例初始化，执行`def(value, "__ob__", this, false);`后当前数组必定包含 __ob__ 属性
+            const ob = this.__ob__;
+
+            // 7种方法里有3种方法 push / unshift / splice 能够插入新项，现在要把插入的新项也变为observe响应式数据
+            let inserted = [];
+
+            switch (methodName) {
+              case "push":
+              case "unshift":
+                inserted = arguments; // 指向插入的新项
+                break;
+              case "splice":
+                // splice参数是splice(下标[，数量[，插入的新项]])
+                inserted = Array.from(arguments).slice(2); // 指向第三个参数
+                break;
+            }
+
+            // 判断有没有要插入的新项
+            if (inserted) {
+              ob.observeArray(inserted);
+            }
+
+            // 触发7种方法之一时，调用notify
+            ob.dep.notify();
+
+            return result; // 返回原API的原返回值
+          },
+          false
+        );
+      });
+
+      class Observer {
+        constructor(value) {
+          // 给需要开启监听的对象声明绑定一个初始化的Observer类，key值为__ob__，且不可被枚举
+          def(value, "__ob__", this, false);
+          if (Array.isArray(value)) {
+            // 1.如果是数组，将这个数组的原型指向重写后的arrayMethods
+            // `Object.setPrototypeOf`：将第一个参数的原型对象指向到第二个参数
+            Object.setPrototypeOf(value, arrayMethods);
+            // 2.让数组实现响应式
+            this.observeArray(value);
+          } else {
+            // 遍历value的key，对每一个属性都开启监听
+            this.walk(value);
+          }
+        }
+        // 遍历
+        walk(value) {
+          for (let key in value) {
+            defineReactive(value, key);
+          }
+        }
+        // 数组的特殊遍历
+        observeArray(arr) {
+          for (let i = 0, l = arr.length; i < l; i++) {
+            // 逐项observe
+            observe(arr[i]);
+          }
+        }
+      }
+
+      function observe(value) {
+        if (typeof value !== "object") return;
+        var obj;
+        if (typeof value.__ob__ !== "undefined") {
+          ob = value.__ob__;
+        } else {
+          ob = new Observer(value);
+        }
+      }
+
+      const obj = {
+        a: {
+          m: {
+            n: 5,
+          },
+        },
+        b: 10,
+        c: [1, 2, 3, 4],
+      };
+
+      observe(obj);
+      console.log("obj", obj);
+      obj.c.splice(2, 2, 5, 6);
+    </script>
+  </body>
+</html>
