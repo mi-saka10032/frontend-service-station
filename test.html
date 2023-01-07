@@ -9,86 +9,89 @@
   <body>
     <script>
       // 拆分表达式str，如'a.b.c.d'，会解析出嵌套对象属性的最终路径
-      function parsePath(str) {
-        var segments = str.split(".");
-        return (obj) => {
-          for (let i = 0; i < segments.length; i++) {
-            if (!obj) return;
-            obj = obj[segments[i]];
-          }
-          return obj;
-        };
+      function parsePath(obj, expression) {
+        const segments = expression.split(".");
+        for (let key of segments) {
+          if (!obj) return;
+          obj = obj[key];
+        }
+        return obj;
+      }
+      const targetStack = [];
+
+      function pushTarget(_target) {
+        targetStack.push(Dep.target);
+        Dep.target = _target;
+      }
+
+      function popTarget() {
+        Dep.target = targetStack.pop();
       }
       var uid2 = 0;
       class Watcher {
-        // target表示需要监听的目标对象
-        // expression表示监听路径，在watch配置项中，对标 '$route.path' 'place.province' 等对象的属性路径
-        // callback表示回调函数，在watch配置项中，对标handler函数
-        constructor(target, expression, callback) {
-          this.id = uid2++;
-          this.target = target;
-          // 属性层级拍平方法
-          this.getter = parsePath(expression);
-          this.callback = callback;
+        constructor(data, expression, cb) {
+          // data: 数据对象，如obj
+          // expression：表达式，如b.c，根据data和expression就可以获取watcher依赖的数据
+          // cb：依赖变化时触发的回调
+          this.uid = uid2++;
+          this.data = data;
+          this.expression = expression;
+          this.cb = cb;
+          // 初始化watcher实例时订阅数据
           this.value = this.get();
         }
-        update() {
-          this.run();
-        }
-        get() {
-          // 进入依赖收集，让全局的Dep.target设置为watcher本身，进入依赖收集阶段
-          // Dep.target为Watcher实例对象，dep的depend触发的时候会添加进dep的subs
-          Dep.target = this;
-          const obj = this.target;
-          var value;
-          try {
-            this.getter(obj);
-          } finally {
-            // 最后关闭target
-            Dep.target = null;
-          }
-        }
-        run() {
-          this.getAndInvoke(this.callback);
-        }
-        getAndInvoke(cb) {
-          const value = this.get();
 
+        get() {
+          // 1.新增watcher目标target的push和pop步骤
+          // 2.因为js为单线程执行，因此同一时刻仅有一个watcher实例执行，Dep.target必定是当前正处于实例化过程中的watcher
+          // 3.等待value值成功析出之后，将当前实例从targetStack中弹出，保证父子对象的两个watcher实例初始化时不会出现target冲突
+          let value;
+          pushTarget(this);
+          try {
+            value = parsePath(this.data, this.expression);
+          } finally {
+            popTarget();
+          }
+          return value;
+        }
+
+        // 当收到数据变化的消息时执行该方法，从而调用cb
+        update() {
+          const value = this.get();
+          // 基本类型，新旧值不相等才会执行更新与回调；复杂类型，触发update时必定更新，vue2特性，因此oldValue与newValue也总是相等
           if (value !== this.value || typeof value === "object") {
             const oldValue = this.value;
-            this.value = value;
-            cb.call(this.target, value, oldValue);
+            this.value = value; // 对存储的数据进行更新
+            this.cb.call(this.data, this.value, oldValue); // 调用回调函数，对标Vue2-watch的handler函数
           }
         }
       }
       var uid1 = 0;
       class Dep {
+        static target = null;
+
         constructor() {
-          this.id = uid1++;
+          this.uid = uid1++;
           // 存储订阅者数组 subscribes
           // 数组里实际存放的是 Watcher 的实例对象
           this.subs = [];
         }
-        // 添加依赖
+        // 添加watcher依赖到指定的dep实例，当且仅当全局的Dep.target绑定了watcher实例时才会push进去
         depend() {
-          // Dep.target 处于依赖收集阶段的判断标志
           if (Dep.target) {
             this.addSub(Dep.target);
           }
         }
-        // 添加订阅
-        addSub(sub) {
-          this.subs.push(sub);
-        }
         // 通知更新
         notify() {
           // 浅拷贝
-          const subs = this.subs.slice();
-          // 遍历
-          for (let i = 0, l = subs.length; i < l; i++) {
-            // Watcher实例对象的update方法调用，更新响应式数据
-            subs[i].update();
-          }
+          const subs = [...this.subs];
+          // 遍历执行watcher实例的update方法更新value
+          subs.forEach((s) => s.update());
+        }
+
+        addSub(sub) {
+          this.subs.push(sub);
         }
       }
 
@@ -105,14 +108,9 @@
           // getter
           get() {
             console.log(`你试图访问${key}属性`);
-            // 如果处于依赖收集阶段，调用依赖收集方法
-            if (Dep.target) {
-              dep.depend();
-              // 为何需要判断childOb？childOb指向的是当前data[key]中的val内部的子对象的dep
-              // childOb存在的情况只有一种，那就是val为复杂类型数据时，此时应该要对该复杂类型内部的dep也做一次依赖收集
-              if (childOb) {
-                childOb.dep.depend();
-              }
+            dep.depend();
+            if (childOb) {
+              childOb.dep.notify();
             }
             return val;
           },
@@ -124,7 +122,6 @@
             }
             val = newValue;
             childOb = observe(newValue);
-            // 触发setter时调用notify
             dep.notify();
           },
         });
@@ -186,7 +183,7 @@
               ob.observeArray(inserted);
             }
 
-            // 触发7种方法之一时，调用notify
+            // 触发7中方法之一时，调用当前dep实例的notify方法
             ob.dep.notify();
 
             return result; // 返回原API的原返回值
@@ -197,6 +194,7 @@
 
       class Observer {
         constructor(value) {
+          this.dep = new Dep();
           // 给需要开启监听的对象声明绑定一个初始化的Observer类，key值为__ob__，且不可被枚举
           def(value, "__ob__", this, false);
           if (Array.isArray(value)) {
@@ -247,7 +245,24 @@
 
       observe(obj);
       console.log("obj", obj);
-      obj.c.splice(2, 2, 5, 6);
+      new Watcher(obj, "a", (val, oldVal) => {
+        console.log(`a从${oldVal}变成了${val}`);
+      });
+      new Watcher(obj, "b", (val, oldVal) => {
+        console.log(`b从${oldVal}变成了${val}`);
+      });
+      new Watcher(obj, "c", (val, oldVal) => {
+        console.log(`c从${oldVal}变成了${val}`);
+      });
+      setTimeout(() => {
+        obj.a.m.n = 100
+      }, 1500);
+      setTimeout(() => {
+        obj.b = 30;
+      }, 2000);
+      setTimeout(() => {
+        obj.c.push(5, 6);
+      });
     </script>
   </body>
 </html>
