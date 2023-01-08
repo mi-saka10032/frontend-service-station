@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      const def = function (obj, key, value, enumerable) {
+        Object.defineProperty(obj, key, {
+          value,
+          enumerable,
+          writable: true,
+          configurable: true,
+        });
+      };
+
+      const arrayPrototype = Array.prototype;
+
+      const arrayMethods = Object.create(arrayPrototype);
+
+      const methodsNeedChange = [
+        "push",
+        "pop",
+        "shift",
+        "unshift",
+        "splice",
+        "sort",
+        "reverse",
+      ];
+
+      methodsNeedChange.forEach((methodName) => {
+        // 备份原来的方法
+        const original = arrayPrototype[methodName];
+        // 定义新方法
+        def(
+          arrayMethods,
+          methodName,
+          function () {
+            // 执行数组的老方法，保证原API顺利执行
+            const result = original.apply(this, arguments);
+
+            // 从顶层对象开始递归调用声明下的数组，已经完成了实例初始化，执行`def(value, "__ob__", this, false);`后当前数组必定包含 __ob__ 属性
+            const ob = this.__ob__;
+
+            // 7种方法里有3种方法 push / unshift / splice 能够插入新项，现在要把插入的新项也变为observe响应式数据
+            let inserted = [];
+
+            switch (methodName) {
+              case "push":
+              case "unshift":
+                inserted = arguments; // 指向插入的新项
+                break;
+              case "splice":
+                // splice参数是splice(下标[，数量[，插入的新项]])
+                inserted = Array.from(arguments).slice(2); // 指向第三个参数
+                break;
+            }
+
+            // 判断有没有要插入的新项
+            if (inserted) {
+              ob.observeArray(inserted);
+            }
+
+            // 改动
+            // 数组7方法之一改动时，需要调动数组对象的dep实例开启依赖收集
+            ob.dep.notify();
+
+            return result; // 返回原API的原返回值
+          },
+          false
+        );
+      });
+
+      function defineReactive(data, key, val) {
+        const dep = new Dep();
+        val = val || data[key];
+        // 定义响应式数据前，先执行一次值类型判断，如果为复杂类型，则会new Observer实例同时遍历key值进入defineReactive的递归执行，直到key的value值为基本类型为止
+        let childOb = observe(val);
+        Object.defineProperty(data, key, {
+          // 可枚举
+          enumerable: true,
+          // 可以被配置，比如可以被delete
+          configurable: true,
+          // getter
+          get() {
+            console.log(`你试图访问${key}属性`);
+            // 重要！！！get收集依赖
+            dep.depend();
+            // 改动
+            // 完善对象的依赖收集
+            // childOb通过observe嵌套执行，目的是确保父对象内部的子对象可以正确执行依赖收集
+            if (childOb) {
+              childOb.dep.depend();
+            }
+            return val;
+          },
+          // setter
+          set(newValue) {
+            console.log(`你试图改变${key}属性`, newValue);
+            if (val === newValue) {
+              return;
+            }
+            val = newValue;
+            childOb = observe(newValue);
+            // 重要！！！set更新依赖
+            dep.notify();
+          },
+        });
+      }
+
+      var uid1 = 0;
+      class Dep {
+        static target = null;
+
+        constructor() {
+          this.uid = uid1++;
+          // 存储订阅者数组 subscribes
+          // 数组里实际存放的是 Watcher 的实例对象
+          this.subs = [];
+        }
+        // 添加watcher依赖到指定的dep实例，当且仅当全局的Dep.target绑定了watcher实例时才会push进去
+        depend() {
+          if (Dep.target) {
+            this.addSub(Dep.target);
+          }
+        }
+        // 通知更新
+        notify() {
+          console.log("更新");
+          // 浅拷贝
+          const subs = [...this.subs];
+          // 遍历执行watcher实例的update方法更新value
+          subs.forEach((s) => s.update());
+        }
+
+        addSub(sub) {
+          this.subs.push(sub);
+        }
+      }
+
+      const targetStack = [];
+
+      function pushTarget(_target) {
+        targetStack.push(Dep.target);
+        Dep.target = _target;
+      }
+
+      function popTarget() {
+        Dep.target = targetStack.pop();
+      }
+
+      class Observer {
+        constructor(value) {
+          // 改动
+          // 为了确保复杂对象可以被正确侦听，需要给对象的 __ob__ 绑定dep实例
+          this.dep = new Dep();
+          // 给需要开启监听的对象声明绑定一个初始化的Observer类，key值为__ob__，且不可被枚举
+          def(value, "__ob__", this, false);
+          if (Array.isArray(value)) {
+            // 1.如果是数组，将这个数组的原型指向重写后的arrayMethods
+            // `Object.setPrototypeOf`：将第一个参数的原型对象指向到第二个参数
+            Object.setPrototypeOf(value, arrayMethods);
+            // 2.让数组实现响应式
+            this.observeArray(value);
+          } else {
+            // 遍历value的key，对每一个属性都开启监听
+            this.walk(value);
+          }
+        }
+        // 遍历
+        walk(value) {
+          for (let key in value) {
+            defineReactive(value, key);
+          }
+        }
+        // 数组的特殊遍历
+        observeArray(arr) {
+          for (let i = 0, l = arr.length; i < l; i++) {
+            // 逐项observe
+            observe(arr[i]);
+          }
+        }
+      }
+
+      //深度访问对象内部每一个值
+      function traverse(tempVal) {
+        console.log("*****", tempVal);
+        let isA = Array.isArray(tempVal);
+        if (!isA) {
+          let key = Object.keys(tempVal);
+          let i = key.length;
+          while (i--) {
+            traverse(tempVal[key]);
+          }
+        }
+      }
+
+      // watcher.js
+      var uid2 = 0;
+      class Watcher {
+        constructor(data, expression, cb) {
+          // data: 数据对象，如obj
+          // expression：表达式，如b.c，根据data和expression就可以获取watcher依赖的数据
+          // cb：依赖变化时触发的回调
+          this.uid = uid2++;
+          this.data = data;
+          this.expression = expression;
+          this.deep = true;
+          this.cb = cb;
+          // 初始化watcher实例时订阅数据
+          this.value = this.get();
+        }
+
+        get() {
+          // 1.新增watcher目标target的push和pop步骤
+          // 2.因为js为单线程执行，因此同一时刻仅有一个watcher实例执行，Dep.target必定是当前正处于实例化过程中的watcher
+          // 3.等待value值成功析出之后，将当前实例从targetStack中弹出，保证父子对象的两个watcher实例初始化时不会出现target冲突
+          let value;
+          pushTarget(this);
+          try {
+            value = parsePath(this.data, this.expression);
+            if (this.deep) {
+              traverse(value);
+            }
+          } finally {
+            popTarget();
+          }
+          return value;
+        }
+
+        // 当收到数据变化的消息时执行该方法，从而调用cb
+        update() {
+          const value = this.get();
+          // 基本类型，新旧值不相等才会执行更新与回调；复杂类型，触发update时必定更新，vue2特性，因此oldValue与newValue也总是相等
+          if (value !== this.value || typeof value === "object") {
+            const oldValue = this.value;
+            this.value = value; // 对存储的数据进行更新
+            this.cb.call(this.data, this.value, oldValue); // 调用回调函数，对标Vue2-watch的handler函数
+          }
+        }
+      }
+
+      function parsePath(obj, expression) {
+        const segments = expression.split(".");
+        for (let key of segments) {
+          if (!obj) return;
+          obj = obj[key];
+        }
+        return obj;
+      }
+
+      function observe(value) {
+        // 基本类型不再往下执行，递归的跳出条件
+        if (typeof value !== "object") return;
+        var ob;
+        if (typeof value.__ob__ !== "undefined") {
+          // 当对象的 __ob__ 不为 undefined 时，说明value已经初始化创建过Observer实例了，此时不再执行new Observer，__ob__是响应式的
+          ob = value.__ob__;
+        } else {
+          // 对象不存在 __ob__ 属性时，new Observer实例对象并初始化value值
+          ob = new Observer(value);
+        }
+        return ob;
+      }
+
+      const obj = {
+        a: {
+          m: {
+            n: 5,
+          },
+        },
+        b: 10,
+        c: {
+          k: 23,
+          l: [1, 2, 3, 4],
+        },
+      };
+
+      observe(obj);
+      console.log("obj", obj);
+      new Watcher(obj, "a", (val, oldVal) => {
+        console.log(`a从${oldVal}变成了${val}`);
+      });
+      new Watcher(obj, "b", (val, oldVal) => {
+        console.log(`b从${oldVal}变成了${val}`);
+      });
+      new Watcher(obj, "c", (val, oldVal) => {
+        console.log(`c从${oldVal}变成了${val}`);
+      });
+      // setTimeout(() => {
+      //   obj.a.m.n = 100;
+      // }, 1500);
+      // setTimeout(() => {
+      //   obj.b = 30;
+      // }, 2000);
+      // setTimeout(() => {
+      //   obj.c.splice(2, 2, 5, 6);
+      // }, 1000);
+      obj.c.l.push(5);
+    </script>
+  </body>
+</html>
