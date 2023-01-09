@@ -25,3 +25,7 @@ category:
 - [脚手架](./7-脚手架.html)
 
 - [渲染与父子通讯](./8-渲染与父子通讯.html)
+
+- [vuex](./9-vuex.html)
+
+- [vue-router](./10-vue-router.html)

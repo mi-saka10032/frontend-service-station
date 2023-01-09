@@ -60,6 +60,11 @@ features:
     details: Vue2基础、配置项、脚手架、数据劫持与依赖收集
     link: /vue2/1-简介.md
 
+  - title: Vue2源码分析
+    icon: preview
+    details: Vue2源码、响应式原理、三大watcher监听器
+    link: /vue2源码分析/1-深入响应式原理.md
+
   - title: Vue3
     icon: vue
     details: Vue3基础、Vite、组合式API、Vue3+TS+Vite

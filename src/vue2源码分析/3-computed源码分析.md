@@ -1,268 +1,22 @@
 ---
 title: 计算与监听源码解析
-order: 12
+order: 3
 category: false
 tag:
   - 响应式原理
-  - 惰性Computed
-  - 深度Watch
+  - 惰性缓存
+  - 依赖耦合
 ---
 
-在[深入响应式原理](./11-深入响应式原理.html)中，我们已经了解了 Observer、Dep、Watcher 之间的关系，最后实现了数据的响应式变化与监听回调，也就是实现了 API 中 data 的响应式数据效果，而且从 Watcher 的源码不难看出，Watcher 类的定义很接近于 API 中 watch 的效果，因此本章对 computed 以及 watch 的源码进行解析，进一步加深对三大依赖收集器：data(render-watcher)、computed(computed-watcher)、watch(user-watcher)中 computed 和 watch 的理解。
+## 前言
 
-## watch 原理与实现
-
-在初始化 initState 方法中，如果用户传入的配置有 watch，调用 initWatch 方法。
-
-### initWatch.js
-
-```js
-function initWatch(vm: Component, watch: Object) {
-  for (const key in watch) {
-    const handler = watch[key];
-    // 监听的是数组
-    if (Array.isArray(handler)) {
-      for (let i = 0; i < handler.length; i++) {
-        // 为数组中每个元素创建watcher
-        createWatcher(vm, key, handler[i]);
-      }
-    } else {
-      createWatcher(vm, key, handler);
-    }
-  }
-}
-```
-
-### createWatcher.js
-
-- 接下来监听器创建函数，该函数主要针对 handler 的类型做判断（handler 可以是函数类型，也可以是对象类型，也就是 watch 的简写和完整写法），最后返回实例原型的`$watch`方法调用
-- `$watch` 中创建独属于 watch 的 user-watch 标识符，new 了一个 watcher 实例对象，关键参数有二，options.user 和 options.immediate
-  - options.user，该参数传入 watcher 中实例化时，在 watcher 实例执行依赖更新时，判断出是属于 watch 的监听器，才会执行 cb 回调函数
-  - options.immediate，该参数会在 watcher 实例化之后进行一次判断，如果为 true，则自行执行一次 watcher 的回调函数（函数带错误捕获以防止错误的回调执行）
-
-```js
-// createWatcher.js
-
-/**
- * Strict object type check. Only returns true
- * for plain JavaScript objects.
- */
-function isPlainObject(obj: any): boolean {
-  return Object.prototype.toString.call(obj) === "[object Object]";
-}
-
-function createWatcher(
-  vm: Component,
-  expOrFn: string | Function,
-  handler: any,
-  options?: Object
-) {
-  // 如果是对象（配置项形式），handler取对象中的handler函数
-  if (isPlainObject(handler)) {
-    options = handler;
-    // 如果是: test:{handler(old,new){}}
-    handler = handler.handler;
-  }
-  // 监听a.b.c（很少使用）
-  if (typeof handler === "string") {
-    handler = vm[handler];
-  }
-  // 返回实例的原型方法 $watch 的返回值，handler对应cb回调函数，options在handler为对象时取出并赋值(deep immediate sync等)
-  return vm.$watch(expOrFn, handler, options);
-}
-
-// 原型方法$watch
-Vue.prototype.$watch = function (
-  expOrFn: string | Function,
-  cb: any,
-  options?: Object
-): Function {
-  const vm: Component = this;
-  // 回调如果是对象，调用createWatcher解构
-  if (isPlainObject(cb)) {
-    return createWatcher(vm, expOrFn, cb, options);
-  }
-  options = options || {};
-  // 标识这个是用户 user-watch
-  options.user = true;
-  // 同样，创建内部watcher
-  const watcher = new Watcher(vm, expOrFn, cb, options);
-  // **立即监听**
-  if (options.immediate) {
-    const info = `callback for immediate watcher "${watcher.expression}"`;
-    pushTarget();
-    // 自执行错误捕获函数
-    invokeWithErrorHandling(cb, vm, [watcher.value], vm, info);
-    popTarget();
-  }
-  return function unwatchFn() {
-    watcher.teardown();
-  };
-};
-```
-
-### watcher.js
-
-- Watcher 类有一处特别需要注意的地方，就是 Vue2 的 watch API 中 watch 配置项，其中的 deep 属性将允许开启深度监听，每当调用 get 函数时都需要判断`this.deep`
-- `this.deep`为 true 时，需要对 value 值递归式查找其内部嵌套的全部 `__ob__` 属性，以触发 get 进行依赖收集
-
-```js
-// watcher.js
-import traverse from './deep.js'
-var id = 0;
-
-// 属性路径解析，通过'a.b.m.n'的字符串解析出对象内部的属性值
-function parsePath(path) {
-  path = path.split('.')
-	return function (obj) {
-		path.forEach((key) => {
-		  obj = obj[key]
-		})
-		return obj
-	}
-}
-
-export default class Watcher {
-    // 四个参数分别是组件实例、属性路径、回调函数、配置项信息
-    constructor(vm, expOrFn , cb,options) {
-        this.vm = vm
-        this.expOrFn = expOrFn //监听的属性 如：a.b.c
-        this.cb = cb // watch 回调
-        if (options) {
-            this.user = !!options.user //这是个 watch
-            this.deep = !!options.deep //深度监听
-        }
-        this.deps = [];
-        this.set = {}
-        this.id = id++
-
-        if (typeof expOrFn === 'function') {
-            // 如果expOrFn是函数，说明是watch的函数简写，直接将函数绑定给getters
-            this.getters = expOrFn
-        } else {
-        	  //访问监听的变量 如：a.b.c.d，解析后返回value值获取函数
-            this.getters = parsePath(this.expOrFn)
-        }
-        //留住 value 调用一次get
-        this.value = this.get();
-    }
-    get() {
-        //标记target，Dep.target入栈
-        pushTarget(this)
-        //访问监听的属性
-        let value = this.getters.call(this.vm, this.vm);
-        // deep开启深度监听，与其他普通watcher最特别的地方
-        if (this.deep) {
-            traverse(value)
-        }
-        //弹出target防止data上每个属性都产生依赖，只有页面上使用的变量需要依赖，Dep.target出栈
-        popTarget()
-        return value
-    }
-    run() {
-        let newValue = this.get()
-        //取出旧值
-        const oldValue = this.value
-        //留住新值
-        this.value = newValue
-        //用户自己传入的watch，user-watcher标识符，只有watch的配置项才会声明this.user=true
-        if (this.user) {
-        	//这里的 cb 就是传入的 watch 回调函数
-             this.cb.call(this.vm, newValue, oldValue)
-        }
-    }
-    addDep(dep) {
-        let id = dep.id
-        //去重防止dep添加watch多次
-        if (!this.set[id]) {
-            //watcher添加dep
-            this.deps.push(dep)
-            //给dep添加watch
-            dep.addSub(this)
-            this.set[id] = true;
-        }
-    }
-    upDate() {
-        this.run()
-    }
-    // 从所有依赖项的订阅者列表中删除自身
-    teardown() {
-  		if (this.active) {
-			// vm实例的watch列表中移除，这是一个开销较大的操作，所以如果vm实例正在被销毁，就跳过
-		    if (!this.vm._isBeingDestroyed) {
-		      remove(this.vm._watchers, this)
-		    }
-		    let i = this.deps.length
-		    while (i--) {
-		      this.deps[i].removeSub(this)
-		    }
-		    this.active = false
-	  }
-}
-```
-
-### deep.js
-
-- watch 配置项中存在 deep 属性，当 deep 为 true 时可以开启深度监听，上面的 Watcher 类中在 deep 为 true 时调用 traverse 函数
-
-- 实际上 deep 的实现原理就是递归的触发数组或对象的 get 进行依赖收集，又因为 `__ob__` 属性仅有数组和对象才有（详见[递归侦测对象属性](./11-深入响应式原理.html#递归侦测对象属性)），因此在这里需要声明一个递归式手动依赖管理函数，将它们的依赖收集到 Observer 类的 dep 中完成 deep 深度监听
-
-```js
-// deep.js
-const seenObjects = new Set(); // 不重复添加
-
-export default function traverse(val) {
-  _traverse(val, seenObjects);
-  seenObjects.clear();
-}
-
-function _traverse(val, seen) {
-  let i, keys;
-  const isA = Array.isArray(val); // val是否是数组
-  const isO = typeof val === "object"; // val是否是对象
-  const isF = Object.isFrozen(val); // val是否是冻结对象
-
-  // 如果不是array和object，或者是已经冻结对象（源码上还判断了VNode对象，此处暂时忽略不计）
-  if ((!isA && !isO) || isF) {
-    return; // 再见
-  }
-
-  if (val.__ob__) {
-    // 只有object和array才有__ob__属性
-    const depId = val.__ob__.dep.id; // 手动依赖收集器的id
-    if (seen.has(depId)) {
-      // 已经有收集过
-      return; // 再见
-    }
-    seen.add(depId); // 没有被收集，添加
-  }
-
-  if (isA) {
-    // 是array
-    i = val.length;
-    while (i--) {
-      _traverse(val[i], seen); // 递归触发每一项的get进行依赖收集
-    }
-  } else {
-    // 是object
-    keys = Object.keys(val);
-    i = keys.length;
-    while (i--) {
-      _traverse(val[keys[i]], seen); // 递归触发子属性的get进行依赖收集
-    }
-  }
-}
-```
-
-## computed 原理与实现
-
-computed 是三大 watcher 中最复杂的一个 watcher，因为它不光是惰性缓存，而且只要是在 getter 中有出现过的响应式数据，都需要触发它的响应式变化
+computed 是三大 watcher 中最复杂的一个 watcher(computed-watcher)，因为它不光是惰性缓存，而且只要是在 getter 中有出现过的响应式数据，都需要触发它的响应式变化
 
 首先，根据[computed 惰性取值](https://v2.cn.vuejs.org/v2/api/#computed)的原理，我们先构建一个配置项，设置惰性的布尔值为 true
 
 `const computedWatcherOptions = { lazy: true }`
 
-### initComputed.js
+## initComputed.js
 
 接下来，初始化 computed 中的配置项
 
@@ -310,9 +64,9 @@ function initComputed(vm: Component, computed: Object) {
 }
 ```
 
-### watcher.js
+## watcher.js
 
-在初始化最后，vm.\_computedWatchers 需要根据 computed 对象中的 key-value 实例化 Watcher，vm 也需要根据不同的 key-value 声明响应式数据，因此需要创建一个`defineComputed`函数，并优化重构[响应式原理](./11-深入响应式原理.html#watcher.js)中的 Watcher 类
+在初始化最后，vm.\_computedWatchers 需要根据 computed 对象中的 key-value 实例化 Watcher，vm 也需要根据不同的 key-value 声明响应式数据，因此需要创建一个`defineComputed`函数，并优化重构[响应式原理](./1-深入响应式原理.html#watcher.js)中的 Watcher 类
 
 - Watcher 类中对 computed 重要的属性在于 dirty（脏值），只有 watcher 实例初始化或调用 update 更新依赖值的时候，dirty 为 true
 - watcher 实例调用 evaluate 方法，即封装后的 get 方法，调用一次响应式 get，随后 dirty 为 false
@@ -374,7 +128,7 @@ export default class Watcher {
 }
 ```
 
-### defineComputed.js
+## defineComputed.js
 
 ```js
 // defineComputed
@@ -437,7 +191,7 @@ function createComputedGetter(key) {
 }
 ```
 
-### 仍未解决的问题-多重嵌套 watcher
+## 仍未解决的问题-多重嵌套 watcher
 
 经过上面的`initComputed`、`watcher`、`defineComputed`的实现，实际上现在已经能实现 data 数据与 computed 数据的相互依赖，data 数据的变化可以引起 computed 属性重新计算并在 data 数据未发生变化时 computed 数据默认取缓存
 
@@ -546,15 +300,17 @@ export function popTarget() {
 }
 ```
 
-### 嵌套 watcher 解决方案
+## 嵌套 watcher 解决方案
 
 先暂时不考虑 watcher.depend()的实现，我们以上面的 demo 为例分析一下这么做的原因：
 
 1. 初始化并首次调用 `vm.comRes` 的 getter 时，调用这个 computedGetter 函数，这时由于 `vm.comRes`的 watcher 依赖于 `vm.res`的 watcher，所以在`vm.comRes`执行 getter 时，`vm.res`的 getter 也会执行，并且`vm.comRes` 的 watcher 先入栈 `targetStack`，`vm.res`的 watcher 后入栈 `targetStack`
 
-2. 代码继续执行，`vm.res`的 watcher 执行完实例的 get 方法后，Dep.target 的栈数组 `targetStack` 弹出自己的 watcher，栈内还剩下依赖`vm.res`的 `vm.comRes`的 watcher 实例，因为 computed-watcher 自身没有 dep 实例用来收发依赖，所以 watcher 实例内部实际上需要创建一个 deps 数组用来存储 deps 实例，但 watcher 实例自身无需创建 dep 实例，思路与响应式原理中 Deps 存储 watcher 实例的`this.subs`相同
+2. 代码继续执行，`vm.res`的 watcher 执行完实例的 get 方法后，Dep.target 的栈数组 `targetStack` 弹出自己的 watcher，栈内还剩下依赖`vm.res`的 `vm.comRes`的 watcher 实例，因为 computed-watcher 自身没有 dep 实例用来收发依赖，所以 watcher 实例内部实际上需要创建一个 deps 数组用来存储 deps 实例，但 watcher 实例自身无需创建 dep 实例，思路与响应式原理中 Deps 存储 watcher 实例的`this.subs`相同.
 
-3. 上述代码继续执行，栈内剩余的`vm.comRes`的 watcher 实例需要转存`vm.res`真正需要的`vm.data.b`和`vm.data.c`的 dep 实例，因此对 Watcher 和 Dep 的调整如下
+3. watcher和dep之间相互耦合，watcher实例中收集关联的dep依赖存储为`this.deps`，提供dep新增、收集、移除的方法，到真正需要用到dep方法的时候调用dep实例自身的方法；dep实例中收集关联的watcher监听器实例存储为`this.subs`，提供watcher新增、收集（实际上是让当前的watcher实例去收集调用它的dep实例）、移除的方法，到真正需要用到watcher方法的时候调用watcher实例自身的方法
+
+4. 上述代码继续执行，栈内剩余的`vm.comRes`的 watcher 实例需要转存`vm.res`真正需要的`vm.data.b`和`vm.data.c`的 dep 实例，因此对 Watcher 和 Dep 的调整如下
 
 ```js
 var uid = 0;
@@ -685,7 +441,7 @@ export default class Watcher {
       // 当前新增的dep实例中没有当前dep.id，则加入这个dep实例，避免重复引入
       this.newDepIds.add(id);
       this.newDeps.push(dep);
-      // 此处使用了十分巧妙的class解耦，看似无关
+      // 此处使用了十分巧妙的class耦合，看似无关
       // 实际上在这里判断出当前dep.id不存在于已有depsId结构中时
       // 转而将参数中的dep实例取出，反过来调用dep.addSub实例方法
       // 保证dep实例中成功加入当前watcher实例，以后的setter更新
@@ -784,28 +540,8 @@ console.log("monitor", vm.comRes);
 
 ![computed实现watcher与dep双向依赖](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Vue/1673245880621.jpg)
 
+
 ## 太长不看-总结
-
-在[深入响应式原理](./11-深入响应式原理.html)中，我们了解了响应式原理的三大核心类：Observer、Dep、Watcher。在外部没有新建 watcher 实例时，Observer 实际上已经能对初始的 data 对象实现响应式数据劫持，Vue2 对于 data 中的响应式对象生成的监听实例称之为 render-watcher，是三种 watcher 之一。
-
-### watch
-
-watch 是三种 watcher 之一的 user-watcher，结合 watch 的配置项来理解：
-
-1. watch 在 vue 实例初始化时，调用一个`initWatch`初始化 watch 的函数，遍历 watch 中的属性，遍历过程中会执行以下步骤
-   1. 循环遍历创建 user-watcher 实例，调用`createWatcher`函数，传入（当前组件 vm 实例、watch 属性名、watch 属性值）
-   2. 在`createWatcher`函数内对 watch 属性值 handler 进行类型判断，有两种情况：普通 handler 函数或者包含 immediate、deep、handler 函数在内的对象（此处不涉及异步处理，暂不写 sync 属性）
-   3. 最后调用组件 vm 的原型方法`$watch`方法，传入（watch 属性名、watch 属性值 handler、handler 中的其他配置选项）
-2. 在 Vue 的原型方法`$watch`，是实现 user-watcher 的关键方法，初始化 Watcher 实例并传入 user 标识符表示该 watcher 实例属于 user-watcher
-   - 最后判断配置选项中的 immediate 是否为 true，如果是，则自动执行一次 watcher 入栈 -> 自执行函数调用与错误捕获函数（防止 handler 函数中出现异常） -> watcher 出栈操作，以实现 handler 函数的立即执行效果
-3. 在 Watcher 类中，新增两项配置，deep 和 user，user 为 true 表示是 watch 创建的 user-watcher 实例
-   - 当 watcher 实例受 dep 通知，更新依赖值时，只有`this.user`为 true 才会执行 handler 的回调函数
-   - 每次 watcher 实例调用 getter 时，都会对`this.deep`进行判断，如果为 true 则表示开启深度监听
-   - 开启深度监听后，watcher 实例会对当前的 value 值进行地毯式循环+递归查询，逐项触发 getter 执行 dep 的依赖收集，添加当前 watcher 实例。所以当复杂对象内部属性变化时，开启深度监听亦可触发 watch 的 handler 回调
-
-可运行项目demo详见：https://github.com/mi-saka10032/vue2-reactive-sourceCode/tree/master/computed
-
-### computed
 
 computed 是三种 watcher 之一的 computed-watcher，也是最复杂的 watcher，结合 computed 的配置项来理解：
 
@@ -818,11 +554,11 @@ computed 是三种 watcher 之一的 computed-watcher，也是最复杂的 watch
    1. 该高阶 getter 函数中，从 `this` 中取出之前已创建好的 `this._computedWatchers[key]` 对象，其实就是对应的 watcher 实例
    2. 每次 getter 的调用，会先判断 watcher 实例的值是否更新（此处记为 dirty，true 表示已更新且未调用 getter，false 表示调用过 getter 无需更新）
    3. 如果 watcher 实例更新，则调用 watcher 的 getter 方法获取依赖值，并执行依赖收集
-   4. **非常重要！！**因为computed-watcher本身并不具备依赖收集器dep，为了保证computed-A依赖于computed-B，B数据变化时A能够正确收到更新通知也发生变化，亦或是user-watcher能够正确监听到computed属性变化，此时需要判断当前处于活化状态的Dep.target，表明是与当前watcher实例密切关联的watcher实例，然后手动开启依赖收集`watcher.depend()`
-   5. 因为当前函数内仅有watcher实例，因此dep实例也需要存储在watcher实例中，在watcher实例中完成依赖的depend、add、remove等操作，虽然增加了Dep和Watcher之间的耦合度，但是解决了嵌套依赖不能正确响应的问题
-   6. 在将当前 computed 相关的所有 watcher 实例通知相关的dep实例收集完成之后，`this.value = 依赖值`，最后 dirty 置为 false
+   4. **非常重要！！**因为 computed-watcher 本身并不具备依赖收集器 dep，为了保证 computed-A 依赖于 computed-B，B 数据变化时 A 能够正确收到更新通知也发生变化，亦或是 user-watcher 能够正确监听到 computed 属性变化，此时需要判断当前处于活化状态的 Dep.target，表明是与当前 watcher 实例密切关联的 watcher 实例，然后手动开启依赖收集`watcher.depend()`
+   5. 因为当前函数内仅有 watcher 实例，因此 dep 实例也需要存储在 watcher 实例中，在 watcher 实例中完成依赖的 depend、add、remove 等操作，虽然增加了 Dep 和 Watcher 之间的耦合度，但是解决了嵌套依赖不能正确响应的问题
+   6. 在将当前 computed 相关的所有 watcher 实例通知相关的 dep 实例收集完成之后，`this.value = 依赖值`，最后 dirty 置为 false
    7. 如果 watcher 实例无需更新，则直接返回 watcher.value，即依赖对象原有的 getter 的值。因为 watcher 实例只要不去更新，`this.value`就稳定不变，因此 computed 在依赖值不更新时，默认直接返回实例的 value 值，而不是去调用 getter 方法获取，此为惰性取值
 3. `defineComputed`函数最后，将高阶 getter 方法、可能存在的 setter 方法，一并通过 `Object.defineProperty` 声明在当前组件实例的 computed 属性名上（`vm[key]`）
 4. computed 依然是通过 Dep 和 Watcher 收集和更新依赖，不过与普通的 render-watcher 不同之处在于，getter 内部存在 watcher 实例更新判断，如果无需更新则直接返回实例的 value 值，不再调用 watcher 本身的 getter 获取依赖值，实现了数据缓存
 
-可运行项目demo详见：https://github.com/mi-saka10032/vue2-reactive-sourceCode/tree/master/watch
+可运行项目 demo 详见：https://github.com/mi-saka10032/vue2-reactive-sourceCode/tree/master/watch
