@@ -254,7 +254,6 @@ function _traverse(val, seen) {
 }
 ```
 
-
 ## 太长不看-总结
 
 watch 是三种 watcher 之一的 user-watcher，结合 watch 的配置项来理解：
@@ -264,10 +263,12 @@ watch 是三种 watcher 之一的 user-watcher，结合 watch 的配置项来理
    2. 在`createWatcher`函数内对 watch 属性值 handler 进行类型判断，有两种情况：普通 handler 函数或者包含 immediate、deep、handler 函数在内的对象（此处不涉及异步处理，暂不写 sync 属性）
    3. 最后调用组件 vm 的原型方法`$watch`方法，传入（watch 属性名、watch 属性值 handler、handler 中的其他配置选项）
 2. 在 Vue 的原型方法`$watch`，是实现 user-watcher 的关键方法，初始化 Watcher 实例并传入 user 标识符表示该 watcher 实例属于 user-watcher
-   - 最后判断配置选项中的 immediate 是否为 true，如果是，则自动执行一次 watcher 入栈 -> 自执行函数调用与错误捕获函数（防止 handler 函数中出现异常） -> watcher 出栈操作，以实现 handler 函数的立即执行效果
-3. 在 Watcher 类中，新增两项配置，deep 和 user，user 为 true 表示是 watch 创建的 user-watcher 实例
+3. `$watch`方法最后判断配置选项中的 immediate 是否为 true，如果为true，则自动执行一次 watcher 入栈 -> 自执行函数调用与错误捕获函数（防止 handler 函数中出现异常） -> watcher 出栈操作，以实现 handler 函数的立即执行效果
+4. 在 Watcher 类中，新增两项配置，deep 和 user，user 为 true 表示是 watch 创建的 user-watcher 实例
    - 当 watcher 实例受 dep 通知，更新依赖值时，只有`this.user`为 true 才会执行 handler 的回调函数
    - 每次 watcher 实例调用 getter 时，都会对`this.deep`进行判断，如果为 true 则表示开启深度监听
    - 开启深度监听后，watcher 实例会对当前的 value 值进行地毯式循环+递归查询，逐项触发 getter 执行 dep 的依赖收集，添加当前 watcher 实例。所以当复杂对象内部属性变化时，开启深度监听亦可触发 watch 的 handler 回调
 
-可运行项目 demo 详见：https://github.com/mi-saka10032/vue2-reactive-sourceCode/tree/master/computed
+可运行项目 demo 详见：
+
+https://github.com/mi-saka10032/vue2-reactive-sourceCode/tree/master/computed
