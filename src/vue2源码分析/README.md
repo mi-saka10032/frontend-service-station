@@ -15,3 +15,5 @@ category:
 - [watch源码分析](./2-watch源码分析.html)
   
 - [computed源码分析](./3-computed源码分析.html)
+
+- [虚拟DOM和diff算法](./4-虚拟DOM和diff算法.html)
