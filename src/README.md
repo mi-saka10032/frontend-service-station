@@ -62,7 +62,7 @@ features:
 
   - title: Vue2源码分析
     icon: preview
-    details: Vue2源码、响应式原理、三大watcher监听器、VDom和diff算法
+    details: Vue2源码、响应式原理、三大watcher监听器、vdom和diff算法、模板引擎与AST语法树
     link: /vue2源码分析/1-深入响应式原理.md
 
   - title: Vue3

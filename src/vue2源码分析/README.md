@@ -7,6 +7,8 @@ category:
   - 响应式原理
   - computed
   - watch
+  - 模板渲染
+  - diff算法
 ---
 
 
@@ -15,5 +17,9 @@ category:
 - [watch源码分析](./2-watch源码分析.html)
   
 - [computed源码分析](./3-computed源码分析.html)
+  
+- [模板引擎](./4-模板引擎.html)
+  
+- [AST抽象语法树](./5-AST抽象语法树.html)
 
-- [虚拟DOM和diff算法](./4-虚拟DOM和diff算法.html)
+- [虚拟DOM和diff算法](./6-虚拟DOM和diff算法.html)

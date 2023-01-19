@@ -1,6 +1,6 @@
 ---
 title: 虚拟DOM和diff算法
-order: 4
+order: 6
 category: false
 tag:
   - 虚拟DOM
