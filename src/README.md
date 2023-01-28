@@ -69,6 +69,11 @@ features:
     icon: vue
     details: Vue3基础、Vite、组合式API、Vue3+TS+Vite
     link: /vue3/1-简介.md
+
+  - title: React
+    icon: react
+    details: React基础、核心属性、脚手架、进阶用法、hooks
+    link: /react/1-简介.md
 copyright: false
 footer: false
 ---
