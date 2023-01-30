@@ -1,0 +1,1 @@
+import{_ as e}from"./_plugin-vue_export-helper.cdc0426e.js";import{o as _,c as t,b as o}from"./app.65bae536.js";const c={},s=o("p",null,"芝士逻辑复用",-1),n=[s];function r(a,l){return _(),t("div",null,n)}const m=e(c,[["render",r],["__file","10-逻辑复用.html.vue"]]);export{m as default};
