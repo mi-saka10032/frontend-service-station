@@ -47,6 +47,10 @@ jobs:
           folder: src/.vuepress/dist
           clean: true
 
+  syncToGitee:
+    needs: deploy-gh-pages
+    runs-on: ubuntu-latest
+    steps:
       - name: 同步Gitee
         uses: wearerequired/git-mirror-action@master
         env:
