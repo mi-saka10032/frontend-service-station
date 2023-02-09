@@ -334,3 +334,63 @@ const withRouter = (Component) => (props, ref) => {
 
 export default withRouter;
 ```
+
+## 动态添加路由
+
+React 和 Vue 的动态添加路由原理都一样，现假设用户已登录成功：
+
+用户登录成功 => 获取用户权限列表 => 获取用户导航菜单列表 => 根据权限和导航生成路由表
+
+默认路由：
+
+```tsx
+import { lazy } from "react";
+import { Navigate } from "react-router-dom";
+
+// React 组件懒加载
+
+// 快速导入工具函数
+const lazyLoad = (moduleName: string) => {
+  const Module = lazy(() => import(`views/${moduleName}`));
+  return <Module />;
+};
+// 路由鉴权组件
+const Appraisal = ({ children }: any) => {
+  const token = localStorage.getItem("token");
+  return token ? children : <Navigate to="/login" />;
+};
+
+interface Router {
+  name?: string;
+  path: string;
+  children?: Array<Router>;
+  element: any;
+}
+
+const routes: Array<Router> = [
+  {
+    path: "/login",
+    element: lazyLoad("login"),
+  },
+  {
+    path: "/",
+    element: <Appraisal>{lazyLoad("sand-box")}</Appraisal>,
+    children: [
+      {
+        path: "",
+        element: <Navigate to="home" />,
+      },
+      {
+        path: "*",
+        element: lazyLoad("sand-box/nopermission"),
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: lazyLoad("not-found"),
+  },
+];
+
+export default routes;
+```

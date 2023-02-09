@@ -317,6 +317,22 @@ function usePrevious(value) {
 }
 ```
 
+### useDidUpdateEffect
+
+对目标 state 依赖执行初始挂载时不触发，后续更新才触发的函数
+
+类似 Vue 中 watch 的`immediate: false`选项
+
+```jsx
+const useDidUpdateEffect(fn, inputs) => {
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if(didMountRef.current) fn();
+    else didMountRef.current = true;
+  })
+}
+```
+
 ### useInterval
 
 用 delay 动态控制定时器，delay 为 null 时不创建定时器，同样利用了 useRef 来存储新的回调
@@ -343,4 +359,56 @@ export default function useInterval(callback, delay) {
     }
   }, [delay]);
 }
+```
+
+### useResizeObserver
+
+获取某个元素的位置信息，resize 时候可以更新。
+
+```jsx
+const useResizeObserver = (ref) => {
+  const [dimensions, setDimensions] = useState(null);
+  useEffect(() => {
+    const observeTarget = ref.current;
+    const resizeObserver = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        setDimensions(entry.contentRect);
+      });
+    });
+    resizeObserver.observe(observeTarget);
+    return () => {
+      resizeObserver.unobserve(observeTarget);
+    };
+  }, [ref]);
+  return dimensions;
+};
+```
+
+### useMount
+
+对标类组件 ComponentDidMount，这里为了防止每次写 useEffect 时候写空数组做了封装
+
+```jsx
+const useMount = (callback) => {
+  useEffect(() => {
+    callback();
+  }, []);
+};
+```
+
+### useDebounce
+
+节流函数结合 hook 使用，利用 useEffect 的依赖值变化的特性，来控制清空定时器。这里主要应用场景是参数快速变化时候的发送请求的节流处理
+
+```jsx
+export const useDebounce = (value, delay) => {
+  const [debounceValue, setDebounceValue] = useState(value);
+  useEffect(() => {
+    // 每次在value变化以后，设置一个定时器
+    const timeout = setTimeout(() => setDebounceValue(value), delay);
+    // 上一个useEffect处理完后清理
+    return () => clearTimeout(timeout);
+  }, [value, delay]);
+  return debounceValue;
+};
 ```
