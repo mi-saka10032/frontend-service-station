@@ -1,11 +1,11 @@
 ---
 title: VueRouter
-order: 10
+order: 11
 category: false
 tag:
   - VueRouter
   - url监听
-  - 单文件路由
+  - SPA路由管理
 ---
 
 ## 理解
@@ -474,7 +474,7 @@ export default {
 
 - 兼容性较好。
 
-4.history 模式：
+  4.history 模式：
 
 ​ - 地址干净，美观。
 
@@ -492,6 +492,6 @@ export default new VueRouter({
 });
 ```
 
-## history模式在生产环境的问题
+## history 模式在生产环境的问题
 
 待定

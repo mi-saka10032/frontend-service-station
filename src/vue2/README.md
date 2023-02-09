@@ -24,8 +24,10 @@ category:
 
 - [脚手架](./7-脚手架.html)
 
-- [渲染与父子通讯](./8-渲染与父子通讯.html)
+- [基础API与扩展](./8-基础API与扩展.html)
+  
+- [组件通信](./9-组件通信.html)
 
-- [vuex](./9-vuex.html)
+- [vuex](./10-vuex.html)
 
-- [vue-router](./10-vue-router.html)
+- [vue-router](./11-vue-router.html)

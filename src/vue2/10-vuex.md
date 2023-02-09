@@ -1,6 +1,6 @@
 ---
 title: VueX
-order: 9
+order: 10
 category: false
 tag:
   - VueX

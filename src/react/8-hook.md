@@ -294,3 +294,53 @@ export default function MemoizedCallback() {
 
 1. 避免子组件对于函数不必要的 reRender
 2. 当父子组件通信，父组件传递内部函数给子组件时，适合使用 useCallback
+
+## 自定义 Hook
+
+自定义 Hook 就是基于 Hook 函数的性质，开发者自行封装、实现其他功能的 hook 函数
+
+这里列举一些与常见的、非业务型、功能性自定义 Hook
+
+### usePrevious
+
+类组件在 componentDidUpdate 可以获取 prevProps，函数式组件中我们使用 useRef 自定义 hook 来实现
+
+```jsx
+import { useEffect, useRef } from "react";
+
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
+```
+
+### useInterval
+
+用 delay 动态控制定时器，delay 为 null 时不创建定时器，同样利用了 useRef 来存储新的回调
+
+```jsx
+import { useEffect, useRef } from "react";
+
+export default function useInterval(callback, delay) {
+  const savedCallback = useRef();
+
+  // 保存新回调
+  useEffect(() => {
+    savedCallback.current = callback;
+  });
+
+  // 建立 interval
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
+```
