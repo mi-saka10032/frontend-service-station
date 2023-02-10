@@ -57,7 +57,7 @@ features:
 
   - title: Vue2
     icon: vue
-    details: Vue2基础、配置项、脚手架、数据劫持与依赖收集
+    details: Vue2基础、配置项、脚手架、数据劫持与依赖收集、API、组件通信、Vue2生态
     link: /vue2/1-简介.md
 
   - title: Vue2源码分析
@@ -72,7 +72,7 @@ features:
 
   - title: React
     icon: react
-    details: React基础、核心属性、脚手架、进阶用法、hooks
+    details: React基础、核心属性、脚手架、进阶用法、hooks、进阶技巧、组件通信、性能优化、React生态
     link: /react/1-简介.md
 copyright: false
 footer: false
