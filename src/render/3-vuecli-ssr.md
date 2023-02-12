@@ -7,6 +7,8 @@ tag:
   - 服务端渲染
 ---
 
+这份是 VueCli 官方提供的服务端渲染指南
+
 ## 什么是服务端渲染
 
 Vue.js 是一个构建客户端应用的框架。默认情况下，作为其输出，Vue 组件会在浏览器中生产并封装 DOM。然而，我们也可以在服务器端把同样的组件渲染成 HTML 字符串，然后直接将其发送给浏览器，并最终将静态标记“激活”为完整的、可交互的客户端应用。
@@ -379,8 +381,266 @@ module.exports = {
 
 如果你使用了 `runInNewContext: 'once'` 或 `runInNewContext: true`，那么你也需要把修改 `global` 的 polyfill (如 `babel-polyfill`) 也加入这个白名单。这是因为在使用新上下文模式时，**服务端构建内的代码有其自己的 `global` 对象。**但由于服务端并不真的需要它，所以它从客户端入口被引入更加容易。
 
-## 生成`clientManifest`
+### 生成`clientManifest`
 
 对于服务端的包，我们还额外生成一个客户端构建单 (manifest)。有了这个客户端构建单和服务端的包，渲染器现在就同时有了服务端和客户端构建版本的信息。这样它就可以自动推断并向渲染出来的 HTML 中注入 [preload / prefetch 指令](https://css-tricks.com/prefetching-preloading-prebrowsing/)、`<link>` 和 `<script>` 标签。
 
-对于服务端的包，我们还额外生成一个客户端构建单 (manifest)。有了这个客户端构建单和服务端的包，渲染器现在就同时有了服务端*和*客户端构建版本的信息。这样它就可以自动推断并向渲染出来的 HTML 中注入 [preload / prefetch 指令](https://css-tricks.com/prefetching-preloading-prebrowsing/)、`<link>` 和 `<script>` 标签。
+## 服务器配置
+
+除了介绍过的[代码结构](https://v3.cn.vuejs.org/guide/ssr/structure.html)和 [webpack 配置](https://v3.cn.vuejs.org/guide/ssr/build-config.html)，我们的 Express 服务端代码同样需要改动。
+
+我们需要通过一个构建好的包里的 `entry-server.js` 创建一个应用。在 webpack manifest 里可以找到其路径：
+
+```js
+// server.js
+const path = require("path");
+const manifest = require("./dist/server/ssr-manifest.json");
+
+// 'app.js' 是以入口的名字加上 `.js` 后缀命名的
+const appPath = path.join(__dirname, "./dist", "server", manifest["app.js"]);
+const createApp = require(appPath).default;
+```
+
+我们需要为所有资源定义正确的路径：
+
+```js
+// server.js
+server.use(
+  "/img",
+  express.static(path.join(__dirname, "./dist/client", "img"))
+);
+server.use("/js", express.static(path.join(__dirname, "./dist/client", "js")));
+server.use(
+  "/css",
+  express.static(path.join(__dirname, "./dist/client", "css"))
+);
+server.use(
+  "/favicon.ico",
+  express.static(path.join(__dirname, "./dist/client", "favicon.ico"))
+);
+```
+
+我们需要把 `index.html` 的内容替换为服务端渲染出来的应用内容：
+
+```js
+// server.js
+const indexTemplate = fs.readFileSync(
+  path.join(__dirname, "/dist/client/index.html"),
+  "utf-8"
+);
+
+server.get("*", async (req, res) => {
+  const { app } = createApp();
+
+  const appContent = await renderToString(app);
+
+  const html = indexTemplate
+    .toString()
+    .replace('<div id="app">', `<div id="app">${appContent}`);
+
+  res.setHeader("Content-Type", "text/html");
+  res.send(html);
+});
+```
+
+**Express 服务器的完整代码**
+
+```js
+const path = require("path");
+const express = require("express");
+const fs = require("fs");
+const { renderToString } = require("@vue/server-renderer");
+const manifest = require("./dist/server/ssr-manifest.json");
+
+const server = express();
+
+const appPath = path.join(__dirname, "./dist", "server", manifest["app.js"]);
+const createApp = require(appPath).default;
+
+server.use(
+  "/img",
+  express.static(path.join(__dirname, "./dist/client", "img"))
+);
+server.use("/js", express.static(path.join(__dirname, "./dist/client", "js")));
+server.use(
+  "/css",
+  express.static(path.join(__dirname, "./dist/client", "css"))
+);
+server.use(
+  "/favicon.ico",
+  express.static(path.join(__dirname, "./dist/client", "favicon.ico"))
+);
+
+server.get("*", async (req, res) => {
+  const { app } = createApp();
+
+  const appContent = await renderToString(app);
+
+  fs.readFile(path.join(__dirname, "/dist/client/index.html"), (err, html) => {
+    if (err) {
+      throw err;
+    }
+
+    html = html
+      .toString()
+      .replace('<div id="app">', `<div id="app">${appContent}`);
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
+  });
+});
+
+console.log("You can navigate to http://localhost:8080");
+
+server.listen(8080);
+```
+
+## 路由和代码分离
+
+### 基于`vue-router`的路由
+
+我们的服务端代码使用了一个 `*` 处理函数来接收任意 URL。这允许我们将被访问的 URL 传递给 Vue 应用，并在客户端和服务端之间复用相同的路由配置！
+
+这里推荐使用官方的 [vue-router](https://github.com/vuejs/vue-router-next)。让我们先创建一个路由文件。注意和应用实例类似，每个请求都需要有一个干净的路由实例，因此该文件应该导出一个 `createRouter` 函数
+
+```js
+// entry-client.js
+import { createSSRApp } from "vue";
+import { createWebHistory } from "vue-router";
+import createRouter from "./router.js";
+import App from "./App.vue";
+
+// ...
+
+const app = createSSRApp(App);
+
+const router = createRouter(createWebHistory());
+
+app.use(router);
+
+// ...
+```
+
+```js
+// entry-server.js
+import { createSSRApp } from "vue";
+// 服务器端路由与客户端使用不同的历史记录
+import { createMemoryHistory } from "vue-router";
+import createRouter from "./router.js";
+import App from "./App.vue";
+
+export default function () {
+  const app = createSSRApp(App);
+  const router = createRouter(createMemoryHistory());
+
+  app.use(router);
+
+  return {
+    app,
+    router,
+  };
+}
+```
+
+### 代码分离
+
+代码分离、或懒加载部分应用，可以帮助缩减浏览器初始化渲染所需下载的资源的尺寸，并大幅优化大型应用的 TTI (time-to-interactive，可交互时间)。其关键是在初始化首屏的时候“按需加载”。
+
+Vue Router 提供了[懒加载支持](https://next.router.vuejs.org/zh/guide/advanced/lazy-loading.html)，允许 [webpack 在此进行代码分离](https://webpack.js.org/guides/code-splitting-async/)。你仅需要
+
+```js
+// 将此处修改……
+import MyUser from "./components/MyUser.vue";
+const routes = [{ path: "/user", component: MyUser }];
+
+// 成为：
+const routes = [
+  { path: "/user", component: () => import("./components/MyUser.vue") },
+];
+```
+
+在客户端和服务端我们都需要等待路由器先解析异步路由组件以合理地调用组件内的钩子。为此我们会使用 [router.isReady](https://next.router.vuejs.org/zh/api/#isready) 方法。让我们来更新客户端入口
+
+```js
+// entry-client.js
+import { createSSRApp } from "vue";
+import { createWebHistory } from "vue-router";
+import createRouter from "./router.js";
+import App from "./App.vue";
+
+const app = createSSRApp(App);
+
+const router = createRouter(createWebHistory());
+
+app.use(router);
+
+router.isReady().then(() => {
+  app.mount("#app");
+});
+```
+
+我们还需要更新 `server.js` 脚本
+
+```js
+// server.js
+const path = require("path");
+
+const appPath = path.join(__dirname, "./dist", "server", manifest["app.js"]);
+const createApp = require(appPath).default;
+
+server.get("*", async (req, res) => {
+  const { app, router } = createApp();
+
+  await router.push(req.url);
+  await router.isReady();
+
+  const appContent = await renderToString(app);
+
+  fs.readFile(path.join(__dirname, "/dist/client/index.html"), (err, html) => {
+    if (err) {
+      throw err;
+    }
+
+    html = html
+      .toString()
+      .replace('<div id="app">', `<div id="app">${appContent}`);
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
+  });
+});
+```
+
+## 客户端激活
+
+所谓激活，指的是 Vue 接管由服务端发送的静态 HTML，并使其变为可以响应客户端数据变化的动态 DOM 的过程。
+
+在 `entry-client.js` 中，我们简单地通过这行代码挂载应用
+
+```js
+app.mount("#app");
+```
+
+Vue 提供了一个 `createSSRApp` 方法用来在客户端代码 (在这个例子中是 `entry-client.js`) 中告诉 Vue 激活现有的静态 HTML，而不是重新创建所有的 DOM 元素。
+
+### 关于激活的注意事项
+
+Vue 会断言客户端生成的虚拟 DOM 树与从服务器渲染出来的 DOM 结构是相匹配的。如果不匹配，则它会放弃激活的过程，抛弃已生成的 DOM 并从头开始渲染。这会在浏览器控制台产生一个警告，但网站还是能正常工作。
+
+### 第一个关键
+
+确保 SSR 工作的第一个关键是确保应用的状态在客户端和服务端一致。密切留意不要依赖浏览器特有的 API (如窗口宽度、设备能力或 localStorage) 或服务器特有的 API (如 Node 内置的)，且留意在不同环境下将输出不同结果的代码 (诸如时区、时间戳、规范化 URL 或生成随机数字)。
+
+### 第二个关键
+
+第二个关键是留意 SSR + 客户端激活时 HTML 的有效性会因浏览器不同而不同。例如在 Vue 模板中编写：
+
+```html
+<table>
+  <tr>
+    <td>hi</td>
+  </tr>
+</table>
+```
+
+浏览器会在 `<table>` 内自动注入 `<tbody>`，然而通过 Vue 生成的虚拟 DOM 并不会包含 `<tbody>`，因此会导致不匹配。为了确保匹配正确，请确保模板中编写的 HTML 是有效的。
+
+**你可以考虑在模板的研发过程中使用诸如 [W3C 标记校验服务](https://validator.w3.org/) 或 [HTML-validate](https://html-validate.org/) 的 HTML 验证器。**
