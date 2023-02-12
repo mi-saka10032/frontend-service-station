@@ -8,6 +8,6 @@ category:
   - 面向对象
 ---
 
-- [基础入门](./base.html)
+1. [基础入门](./base.html)
 
-- [面向对象](./oop.html)
+2. [面向对象](./oop.html)

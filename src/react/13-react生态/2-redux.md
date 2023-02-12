@@ -5,6 +5,9 @@ category: false
 tag:
   - 全局状态管理
   - Redux
+  - Flux模型
+  - 异步中间件
+  - 事务监听
 ---
 
 本章记录基于 Flux 思想在内的多数常用状态管理库，不局限于 Redux
@@ -201,124 +204,38 @@ const store = createStore(reducers);
 })
 ```
 
-### 异步中间件
+## react-redux
 
-机制：识别 action 的类型，函数类型执行异步中间件；非函数类型执行同步操作：返回类型值操作 Reducers
+`react-redux`简化了 redux 的书写流程，使 redux 能更简洁地嵌入到 React 组件中，比如无需组件添加与取消订阅，属性自动获取等
 
-#### `redux-thunk`
+### 容器组件与 UI 组件
 
-原理：
+UI 组件：
 
-```js
-function createThunkMiddleware(extraArgument) {
-  return ({ dispatch, getState }) =>
-    (next) =>
-    (action) => {
-      if (typeof action === "function") {
-        return action(dispatch, getState, extraArgument);
-      }
-      return next(action);
-    };
-}
-const thunk = createThunkMiddleware();
-thunk.withExtraArgument = createThunkMiddleware;
-export default thunk;
-```
+- 只负责 UI 呈现，不带有任何业务逻辑
+- 没有状态，即不使用 state 状态管理
+- 所有数据都由参数 props 提供
+- 不使用任何 redux 的 API
 
-store.js
+容器组件：
 
-```js
-import thunk from "redux-thunk";
-import { applyMiddleware } from "redux";
-const store = createStore(reducers, applyMiddleware(thunk));
-```
+- 负责管理数据和业务逻辑，不负责 UI 的呈现
+- 带有内部状态
 
-actions.js
+### `react-redux`流程
 
-```js
-function getWeather(url, params) {
-  return (dispatch, getState) => {
-    axios(url, params)
-      .then((result) => {
-        dispatch({ type: "GET_WEATHER_SUCCESS", payload: result });
-      })
-      .catch((err) => {
-        dispatch({ type: "GET_WEATHER_ERROR", error: err });
-      });
-  };
-}
-```
+![react-redux流程](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/react-redux.png)
 
-view.jsx
+简化的流程有：
 
-```jsx
-useEffect(() => {
-  store.dispatch(getAsyncList());
-}, []);
-```
+1. store -> reducers -> combineReducers：reducer 合并
+2. store -> mapStateToProps：状态转 props 属性
+3. actions -> mapDispatchToProps：方法转属性
+4. 最终容器组件 = connect(mapStateToProps, mapDispatchToProps：方法转属性)(视图组件)：属性与方法注入
+5. 提供者 Provider：提供全局 store
 
-dispatch 更改为函数，将 dispatch 作为函数的第一个函数传递进去，在函数内异步操作即可
+总的来说，`react-redux`是为了简化 redux 的操作步骤，对视图组件执行 props 属性的按需注入，通过属性直接操作 state 与 action，进一步分离了 redux 与 view 之间的联系，view 组建中不会调用 redux 中的任何 api
 
-#### `redux-promise`
+从代码风格上来看，`react-redux`跟`vueX`风格类似
 
-`redux-thunk`适合简单 API 请求场景，`redux-promise`更适合输入输出操作
-
-源码：
-
-```js
-import { isFSA } from "flux-standard-action";
-function isPromise(val) {
-  return val && typeof val.then === "function";
-}
-export default function promiseMiddleware({ dispatch }) {
-  return (next) => (action) => {
-    if (!isFSA(action)) {
-      return isPromise(action) ? action.then(dispatch) : next(action);
-    }
-    return isPromise(action.payload)
-      ? action.payload.then(
-          (result) => dispatch({ ...action, payload: result }),
-          (error) => {
-            dispatch({ ...action, payload: error, error: true });
-            return Promise.reject(error);
-          }
-        )
-      : next(action);
-  };
-}
-```
-
-其实跟`redux-thunk`大差不差
-
-1. 先判断是不是标准 flux action
-2. 如果不是则判断是否 promise，是的话执行`action.then(dispatch)`，否则执行`next(action)`
-3. 如果是，就判断 payload 是否是 promise，是就 payload.then 获取数据，然后 dispatch 最终的结果，不是则执行 next(action)
-
-简化 actions 写法
-
-```js
-const fetchData = (url, params) => fetch(url, params);
-
-async function getWeather(url, params) {
-  const result = await fetchData(url, params);
-  if (result.error) {
-    return { type: "GET_WEATHER_ERROR", error: result.error };
-  }
-  return { type: "GET_WEATHER_SUCCESS", payload: result };
-}
-```
-
-#### `redux-saga`
-
-`redux-saga`是用于代替`redux-thunk`的异步操作管理中间件。它创建 Sagas 将所有异步操作逻辑存放在一个地方集中处理，以此将同步与异步操作分开维护
-
-![redux-saga](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/redux-saga.png)
-
-特点：
-
-1. 复杂异步
-2. 可以使用 takeEvery 打印 logger，便于测试
-3. 提供 takeLatest/takeEvery/throttle 方法，便于实现事件监测与节流
-4. 提供 cancel/delay 方法，可以取消或延迟异步请求
-5. 提供`race(effects), [...effects]`，支持竞态和并行
-6. 提供 channel 机制支持外部事件
+示例代码详见[redux-saga 代码示例](#使用案例)引用了`react-redux`的案例

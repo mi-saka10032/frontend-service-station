@@ -7,8 +7,8 @@ category:
   - axios
 ---
 
-- [前言](./preface.html)
+1. [前言](./preface.html)
 
-- [webpack基础配置](./primary.html)
+2. [webpack基础配置](./primary.html)
 
-- [webpack进阶配置](./senior.html)
+3. [webpack进阶配置](./senior.html)

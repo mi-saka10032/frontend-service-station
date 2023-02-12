@@ -7,6 +7,6 @@ category:
   - axios
 ---
 
-- [AJAX](./AJAX.html)
+1. [AJAX](./AJAX.html)
   
-- [axios](./axios.html)
+2. [axios](./axios.html)

@@ -45,7 +45,7 @@ features:
     details: Node、模块化、EventLoop、express、koa、mysql
     link: /node/Node引擎.md
 
-  - title: Webpack
+  - title: 构建工具
     icon: view
     details: Webpack、Webpack基础与进阶配置、构建优化
     link: /webpack/preface.md
