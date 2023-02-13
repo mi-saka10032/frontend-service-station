@@ -1,9 +1,9 @@
 ---
-title: Vue2源码分析
+title: Vue源码分析
 icon: preview
 index: false
 category:
-  - Vue2源码
+  - Vue源码
   - 响应式原理
   - computed
   - watch
