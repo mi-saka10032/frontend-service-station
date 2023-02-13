@@ -5,7 +5,6 @@ category: false
 tag:
   - Vite
   - 结构分析
-  - 运行机制
 ---
 
 Vite 是一个由 ESBuild 搭建的快速开发服务器与一套 Rollup 打包器构成的前端构建工具
@@ -16,71 +15,50 @@ Vite 是一个由 ESBuild 搭建的快速开发服务器与一套 Rollup 打包�
 
 Vite 与 VueCli 和 Webpack 的对比详见[Vite 冷启动](../vue3/2-创建工程.html#优秀的冷启动)
 
-## 冷启动链路
+## 安装与创建
 
-现在分析执行 vite 命令后 vite 的启动流程。参考链接：https://blog.csdn.net/qq_40716795/article/details/122975260
+### 安装包
 
-### 命令解析
+注意：Vite 需要 Node 版本 14.18+，16+；并且不支持 IE 和其他不支持原生 ESM 的浏览器版本
 
-这部分代码在 src/node/cli.ts 里，主要内容是借助 minimist —— 一个轻量级的命令解析工具解析 npm scripts，解析的函数是 resolveOptions ，精简后的代码片段如下
+::: code-tabs#shell
 
-```ts
-function resolveOptions() {
-  // command 可以是 dev/build/optimize
-  if (argv._[0]) {
-    argv.command = argv._[0];
-  }
-  return argv;
-}
+@tab npm
+
+```sh
+npm i -g vite
 ```
 
-拿到 options 后，会根据 options.command 的值判断是执行在开发环境需要的 runServe 命令或生产环境需要的 runBuild 命令
+@tab yarn
 
-```ts
-if (!options.command || options.command === "serve") {
-  runServe(options);
-} else if (options.command === "build") {
-  runBuild(options);
-} else if (options.command === "optimize") {
-  runOptimize(options);
-}
+```sh
+yarn i -g vite
 ```
 
-在 runServe 方法中，执行 server 模块的创建开发服务器方法，同样在 runBuild 中执行 build 模块的构建方法
+@tab pnpm
 
-### runServe
+```sh
+pnpm i -g vite
+```
 
-这部分代码在 src/node/server/index.ts 里，主要暴露一个 createServer 方法。
+:::
 
-vite 使用 koa 作 web server，使用 clmloader 创建了一个监听文件改动的 watcher，同时实现了一个插件机制，将 koa-app 和 watcher 以及其他必要工具组合成一个 context 对象注入到每个 plugin 中
+### 创建新项目
 
-![ViteContext](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Webpack/vite-context.png)
+```sh
+npm create vite
+```
 
-### plugin
+根据自己的情况选用技术栈
 
-plugin 依次从 context 里获取上面这些组成部分，有的 plugin 在 koa 实例添加了几个 middleware，有的借助 watcher 实现对文件的改动监听，这种插件机制带来的好处是整个应用结构清晰，同时每个插件处理不同的事情，职责更分明
+![ViteCli](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Webpack/vue-cli.png)
 
-默认的 plugin 有：
+## 目录结构
 
-- 用户注入的 plugins —— 自定义 plugin
+![ViteStructure](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Webpack/vite-structure.jpg)
 
-- hmrPlugin —— 处理 hmr
+除了项目根目录新增的一些 ts 配置文件和其他插件配置文件之外，Vite 的项目结构大体与 VueCli 相同
 
-- htmlRewritePlugin —— 重写 html 内的 script 内容
+有一处例外，index.html 的存放路径变更为根目录
 
-- moduleRewritePlugin —— 重写模块中的 import 导入
-
-- moduleResolvePlugin ——获取模块内容
-
-- vuePlugin —— 处理 vue 单文件组件
-
-- esbuildPlugin —— 使用 esbuild 处理资源
-
-- assetPathPlugin —— 处理静态资源
-
-- serveStaticPlugin —— 托管静态资源
-
-- cssPlugin —— 处理 css/less/sass 等引用
-
-所以，plugin 在开发模式下的运行机制实际上就是 koa 的中间件；在生产模式下则略有不同，它们是作为 rollup 打包的 plugin
-
+其他文件夹的作用详见[VueCli 目录结构](./vuecli.html#目录结构)
