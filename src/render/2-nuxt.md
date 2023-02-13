@@ -518,7 +518,7 @@ loading: false; // 关闭nuxt自带的loading加载效果
 
 ### 个性化 loading
 
-![个性化loading配置](<(https://misaka10032.oss-cn-chengdu.aliyuncs.com/renderMode/image-20220331232346390.png)>)
+![个性化loading配置](https://misaka10032.oss-cn-chengdu.aliyuncs.com/renderMode/image-20220331232346390.png)
 
 ### 自定义 loading
 
