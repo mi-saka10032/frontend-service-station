@@ -5,6 +5,7 @@ category: false
 tag:
   - Vite
   - 结构分析
+  - 构建优化
 ---
 
 Vite 是一个由 ESBuild 搭建的快速开发服务器与一套 Rollup 打包器构成的前端构建工具

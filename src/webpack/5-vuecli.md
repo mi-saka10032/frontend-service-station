@@ -5,7 +5,7 @@ category: false
 tag:
   - VueCli
   - 结构分析
-  - 运行机制
+  - 构建优化
 ---
 
 CLI：Command-Line Interface，命令行界面，俗称脚手架
