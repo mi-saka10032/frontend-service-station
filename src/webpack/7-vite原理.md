@@ -8,6 +8,8 @@ tag:
   - 热更新原理
 ---
 
+Vite 在 dev 模式下执行的是 ESBuild 编译，build 时使用 rollup 编译。除了 Vite 把 loader 概念同化为 plugin 之外，其运作流程与 Webpack 基本类似，详见[Webpack 原理](./4-webpack原理.html)
+
 ## 冷启动链路
 
 现在分析执行 vite 命令后 vite 的启动流程

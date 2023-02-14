@@ -48,7 +48,7 @@ features:
   - title: 构建工具
     icon: view
     details: Webpack、Webpack基础与进阶配置、构建优化
-    link: /webpack/preface.md
+    link: /webpack/1-preface.md
 
   - title: Typescript
     icon: typescript
