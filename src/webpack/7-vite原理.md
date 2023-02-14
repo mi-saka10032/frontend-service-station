@@ -1,6 +1,6 @@
 ---
 title: Vite原理
-order: 6
+order: 7
 category: false
 tag:
   - Vite
@@ -10,7 +10,9 @@ tag:
 
 ## 冷启动链路
 
-现在分析执行 vite 命令后 vite 的启动流程。参考链接：https://blog.csdn.net/qq_40716795/article/details/122975260
+现在分析执行 vite 命令后 vite 的启动流程
+
+参考链接：https://blog.csdn.net/qq_40716795/article/details/122975260
 
 ### 命令解析
 

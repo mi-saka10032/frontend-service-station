@@ -4,6 +4,7 @@ order: 2
 category: false
 tag:
   - Vue
+  - Nuxt
   - SSR
   - 服务端渲染框架
 ---
