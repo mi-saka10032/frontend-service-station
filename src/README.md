@@ -64,7 +64,7 @@ features:
     icon: vue
     details: Vue3基础、Vite、组合式API、Vue3+TS+Vite
     link: /vue3/1-简介.md
-    
+
   - title: Vue源码分析
     icon: preview
     details: Vue源码、响应式原理、三大watcher监听器、vdom和diff算法、模板引擎与AST语法树
@@ -77,8 +77,13 @@ features:
 
   - title: 前端渲染模式
     icon: page
-    details: 前端渲染模式、CSR、SSR、SSG、ISR、VueCli的服务端渲染、Vite的服务端渲染
+    details: 前端渲染模式、CSR、SSR、SSG、ISR、VueCli的服务端渲染、Vite的服务端渲染、Nuxt框架
     link: /render/1-front-render.md
+
+  - title: 微前端
+    icon: customize
+    details: 微服务模式、结构特点、组合式路由分发、iframe嵌套
+    link: /micro/1-简介.md
 copyright: false
 footer: false
 ---
