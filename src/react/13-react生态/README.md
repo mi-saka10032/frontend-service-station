@@ -1,6 +1,6 @@
 ---
 title: React生态
-icon: customize
+icon: app
 index: false
 category:
   - React生态
