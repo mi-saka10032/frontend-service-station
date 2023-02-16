@@ -20,4 +20,14 @@ export const coreNavbar = navbar([
       { text: "React", icon: "react", link: "/react/1-简介" },
     ],
   },
+  {
+    text: "构建工具",
+    icon: "build",
+    children: [
+      { text: "Webpack", icon: "view", link: "/webpack/2-primary" },
+      { text: "VueCli", icon: "view", link: "/webpack/5-vuecli" },
+      { text: "Vite", icon: "view", link: "/webpack/6-vite" },
+      { text: "Umi", icon: "view", link: "/webpack/8-umi" },
+    ],
+  },
 ]);

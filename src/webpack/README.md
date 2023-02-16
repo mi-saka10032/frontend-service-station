@@ -1,6 +1,6 @@
 ---
 title: 构建工具
-icon: view
+icon: build
 index: false
 category:
   - Webpack
