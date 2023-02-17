@@ -84,6 +84,11 @@ features:
     icon: customize
     details: 微服务模式、结构特点、组合式路由分发、iframe嵌套
     link: /micro/1-简介.md
+
+  - title: 性能优化
+    icon: launch
+    details: 内存优化、交互优化、性能指标优化
+    link: /performance/1-memory.md
 copyright: false
 footer: false
 ---

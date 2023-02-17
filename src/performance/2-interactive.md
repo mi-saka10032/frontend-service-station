@@ -6,7 +6,7 @@ tag:
   - 网络协议
   - URL解析过程
   - 页面加载优化
-  - 界面交互优化
+  - 资源预加载
 ---
 
 交互优化，我个人的理解是：包含从输入网址访问、页面渲染到用户操作界面交互整个人机交互的优化过程
@@ -91,7 +91,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 服务器端收到请求后的由 web 服务器（准确说应该是 http 服务器）处理请求，诸如 Apache、Nginx、IIS 等。web 服务器解析用户请求，知道了需要调度哪些资源文件，再通过相应的这些资源文件处理
 用户请求和参数，并调用数据库信息，最后将结果通过 web 服务器返回给浏览器客户端。
 
-![服务器处理请求](https://misaka10032.oss-cn-chengdu.aliyuncs.com/performance/server.jpg)
+![服务器处理请求](https://misaka10032.oss-cn-chengdu.aliyuncs.com/performance/server.png)
 
 服务器处理 http 请求，并返回响应报文。响应报文包括三个部分：状态码、响应头、响应体（响应正文）
 
@@ -198,7 +198,7 @@ repaint 发生在元素的可见性发生变化时如背景色、前景色等，
 
 减少 reflow 的次数其实也就是减少了 repaint 的次数
 
-减少单纯的 repaint 的方法就是避免逐条修改 DOM 样式
+减少单纯的 repaint 的方法就是避免逐条修改 DOM 样式，多采用预定义 class 最后修改根节点的 className 的方式
 
 ### 嵌入式静态资源
 
@@ -225,3 +225,294 @@ ajax 请求虽然是异步的，但返回值回填 html 触发 reflow 和 repain
 所以应该尽量确保页面加载渲染完成后再发送请求
 
 对于大部分前端框架而言，应采取的方案是：在组件生命周期 mounted 中调用 ajax 请求
+
+## 交互优化之防抖节流
+
+防抖和节流的方案是为了解决短时间内大量触发某函数而导致的性能问题，比如触发频率过高导致响应速度跟不上触发频率，出现延迟、假死或卡顿的现象
+
+### Debounce 防抖
+
+定义：在事件被触发 N 秒后再执行回调函数，如果在这 N 秒内又被触发，则重新计时。简单来说就是在限定时间内多次触发的事件，只有最后一次会生效
+
+适用场景：限制用户高频操作、重复请求
+
+以下是鼠标点击防抖的 demo
+
+::: normal-demo 鼠标点击防抖
+
+```css
+.box {
+  width: 100px;
+  min-height: 100px;
+  border: 1px solid #000;
+}
+```
+
+```html
+<button class="btn">点我</button>
+<div class="box">1</div>
+```
+
+```js
+function debounce(fn, delay) {
+  let timer = null;
+  return (args) => {
+    clearTimeout(timer);
+    timer = setTimeout(fn.bind(this, args), delay);
+  };
+}
+
+function add() {
+  const box = document.querySelector(".box");
+  box.innerText++;
+}
+
+const debounceAdd = debounce(add, 1000);
+const btn = document.querySelector(".btn");
+btn.onclick = debounceAdd;
+```
+
+:::
+
+### Throttle 节流
+
+定义：在一个限定时间内，只能有一次触发事件的回调函数执行。简单来说就是限定时间多次触发事件，只有第一次会生效
+
+适用场景：使交互操作频率固定、虚拟滚动监听、搜索联想
+
+以下是鼠标点击节流的 demo
+
+::: normal-demo 鼠标点击节流
+
+```css
+.box {
+  width: 100px;
+  min-height: 100px;
+  border: 1px solid #000;
+}
+```
+
+```html
+<button class="btn">点我</button>
+<div class="box">1</div>
+```
+
+```js
+function throttle(fn, delay) {
+  let timer = null;
+  return (args) => {
+    if (timer) return;
+    timer = setTimeout(() => {
+      fn.apply(this, args);
+      timer = null;
+    }, delay);
+  };
+}
+
+function add() {
+  const box = document.querySelector(".box");
+  box.innerText++;
+}
+
+const throttleAdd = throttle(add, 1000);
+const btn = document.querySelector(".btn");
+btn.onclick = throttleAdd;
+```
+
+:::
+
+### 防抖节流结合
+
+防抖和节流也可以结合起来使用，创造一个限定单位时间内，只有第一次和最后一次操作生效的场景
+
+::: normal-demo 防抖节流结合
+
+```css
+.box {
+  width: 100px;
+  min-height: 100px;
+  border: 1px solid #000;
+}
+```
+
+```html
+<button class="btn">点我</button>
+<div class="box">1</div>
+```
+
+```js
+function mixin(fn, delay) {
+  let last = null;
+  let timer = null;
+  return (args) => {
+    // now为第一次点击时生成的当前时间，随后每次点击都是最新时间
+    let now = Date.now();
+    if (last && last + delay >= now) {
+      // last时间 + 延时 的时间量大于当前时间，说明已经执行过一次fn了，设置防抖
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        // 执行完单位时间内最后一次fn，将最后执行时间置为首次点击的now时间，作为一次生效的时间刻度点
+        last = now;
+        fn.apply(this, args);
+      }, delay);
+    } else {
+      // 第一次点击或后续delay时间外的点击才会进入else，将最后执行时间只为now，手动调用fn
+      last = now;
+      fn.apply(this, args);
+    }
+  };
+}
+
+function add() {
+  const box = document.querySelector(".box");
+  box.innerText++;
+}
+
+const mixinAdd = mixin(add, 2000);
+const btn = document.querySelector(".btn");
+btn.onclick = mixinAdd;
+```
+
+:::
+
+这里创建两处闭包，last 和 timer 是外层闭包变量，now 是内层 setTimeout 内的闭包变量
+
+将整个时间看成一个数组维度，now 是时间数组的快指针，last 是时间数组的慢指针，事件的触发就是 last 带着一个延伸长度的 delay 不断追赶 now 的位置，这样比较好理解
+
+## 资源预加载
+
+注意，下述属性都是基于`<link>`标签谈论的加载手段
+
+### preload
+
+preload 是浏览器的一种高优先级预加载资源模式，它的作用是将资源率先加载，然后等到需要的时候再去使用，是一种资源的加载和解析解耦的方法。它有如下特点：
+
+1. 具有优先级，但是并不会阻塞 onload 事件：preload 在网页中具有强制加载的功能，所以它的加载具有优先级，但并不会执行，最后还是需要 script 进行加载
+2. 它设计的目的是为当前页面的资源进行预加载，跳转页面的时候不会用到
+3. 使用 as 字段来进行设定优先级，优先级顺序为：HTML/CSS > Images > JS
+
+```html
+<!-- 资源预加载 -->
+<link rel="preload" href="image.png" />
+<!-- img标签获取图片资源 -->
+<img src="image.png" />
+```
+
+```html
+<!-- Via markup -->
+<link rel="preload" href="/css/mystyles.css" as="style" />
+<!-- Via JavaScript -->
+<script>
+  var res = document.createElement("link");
+  res.rel = "preload";
+  res.as = "style";
+  res.href = "css/mystyles.css";
+  document.head.appendChild(res);
+</script>
+```
+
+### prefetch
+
+prefetch 是一个低优先级的资源模式，它允许浏览器在后台（空闲时间）提取以后可能需要的资源，并将其存储在浏览器的缓存中。它更关注的是网页初始化完毕后进行加载的资源，或者打开另外一个网页的时候加载的资源。注意 prefetch 加载跨域资源的时候需要附加 crossorigin 字段。它的特点有：
+
+- 它可能是一件坏事，因为加载的内容可能并不会用到
+- 利用空闲时间进行加载
+- 实现加载和解析相反的功能
+
+```html
+<link rel="prefetch" href="/uploads/images/pic.png" />
+<link rel="dns-prefetch" href="//fonts.googleapis.com" />
+```
+
+相比于 preload，prefetch 可能并不是一个好的选择。在大多数 SPA 项目中，我们通常都会删除掉 prefetch 配置
+
+```js
+// vue.config.js
+module.exports = {
+  chainWebpack: (config) => {
+    // when there are many pages, it will cause too many meaningless requests
+    config.plugins.delete("prefetch");
+  },
+};
+```
+
+### preload 与 prefetch 对比
+
+这两个概念容易混淆，中场做个对比：
+
+- prefetch 是低优先级的预加载，是对用户接下来可能使用到的资源预先进行下载
+- preload 是高优先级的预加载，或者说是预下载，本质上是影响资源的加载顺序，把页面中可能后置下载的资源前置下载，后面需要调取资源的时候就免去了下载步骤
+
+### dns-prefetch
+
+dns-prefetch 允许浏览器在用户浏览时在后台执行 DNS 查找，这最大限度地减少了延迟，预先省去了 DNS 解析的时间，同时也可用于重定向背后的资源
+
+注意：DNS 请求在带宽方面非常小，但延迟可能会相当高，尤其是在移动网络上。因此 prefetch
+非常适合在手机端使用
+
+### prerender
+
+prerender 顾名思义，就是提前渲染。这是一个非常“重”的操作，浏览器会预先完成资源加载、执行并渲染，在需要时立刻调出
+
+主要应用场景在预渲染下一个 html 导航目标，即其他 html 页面内容的快速切换展示
+
+由于非常消耗资源和算力，在大部分项目尤其是 SPA 下，基本没有应用场景
+
+### preconnect
+
+preconnect 可以提前建立连接，其实也就是比 dns-prefetch 多走了两步，除了完成 dns 解析域名之外，还完成了 TCP 三次握手、TLS 握手（https 协议下），相比 dns-prefetch 更进一步减少了延迟时间
+
+使用场景基本同 dns-prefetch
+
+## 脚本解析
+
+注意
+
+- 下述属性都是基于`<script>`标签谈论的解析手段
+- async 和 defer 属性仅对带 src 的 script 外链有效，内联脚本无效
+
+![script解析顺序](https://misaka10032.oss-cn-chengdu.aliyuncs.com/performance/script-loader.png)
+
+```html
+<script src="script.js"></script>
+<script async src="script.js"></script>
+<script defer src="myscript.js"></script>
+```
+
+默认情况下的 script 加载就不必说了，整个加载和执行都会阻塞主进程，执行完毕后解析过程才会继续
+
+### async
+
+script 资源携带 async，资源加载和 html 渲染并行进行，等到异步 js 资源加载完毕后执行 js 阻塞渲染步骤，等到 js 执行完毕后未完成的渲染步骤才继续进行
+
+它的作用是能够异步的加载和执行脚本，不因为加载脚本而阻塞页面的加载。一旦加载到就会立刻执行
+
+适用场景：与其他 js 不相关、与 dom 渲染无耦合的文件，比如`iconfont.js`
+
+### defer
+
+script 资源携带 defer，资源加载和 html 渲染并行进行，但资源加载完成后不会立刻执行，等到所有元素解析完成后，DOMContentLoaded 事件触发之前执行脚本
+
+它的作用是即使 script 放在 head 里面，它也会在 html 页面解析完毕之后再去执行，也就是类似于把这个 script 放在了页面底部
+
+适用场景：与其他 js 不相关，需要 dom 节点渲染完成后执行的文件，如数据埋点、DOM 渲染脚本
+
+### 相同点
+
+- 加载文件时不阻塞页面渲染
+- 对于 inline 的 script 无效
+- 使用这两个属性的脚本中不能调用 document.write 方法
+- 在 DOMContentLoaded 出发前执行，所以脚本中可以存在 onload 的事件回调
+
+### 不同点
+
+async：异步加载，执行时阻塞 DOM 解析，且执行顺序是无序的，谁先加载完谁先执行。可能在 DOMContentLoaded 事件之前也可能在其之后，但一定在 onload 事件之前执行
+
+defer：异步加载，在页面解析完成，DOMContentLoaded 事件触发前执行，执行时不阻塞 DOM 解析
+
+### 事件补充
+
+DOMContentLoaded 和 onload 事件
+
+- 当 onload 事件触发时，页面全部加载完成包括图片
+- 当 DOMContentLoaded 事件触发时，仅 DOM 渲染完成，图片视频可能还没加载完
