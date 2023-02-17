@@ -82,12 +82,12 @@ features:
 
   - title: 微前端
     icon: customize
-    details: 微服务模式、结构特点、组合式路由分发、iframe嵌套
+    details: 微服务模式、方案选型、single-SPA、iframe嵌套、WebComponents、微前端部署
     link: /micro/1-简介.md
 
   - title: 性能优化
     icon: launch
-    details: 内存优化、交互优化、性能指标优化
+    details: 内存优化、交互优化、性能指标优化、WebWorker、缓存技术、PWA、Nginx
     link: /performance/1-memory.md
 copyright: false
 footer: false

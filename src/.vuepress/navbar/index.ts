@@ -25,9 +25,19 @@ export const coreNavbar = navbar([
     icon: "build",
     children: [
       { text: "Webpack", icon: "view", link: "/webpack/2-primary" },
-      { text: "VueCli", icon: "view", link: "/webpack/5-vuecli" },
-      { text: "Vite", icon: "view", link: "/webpack/6-vite" },
-      { text: "Umi", icon: "view", link: "/webpack/8-umi" },
+      { text: "VueCli", icon: "vue", link: "/webpack/5-vuecli" },
+      { text: "Vite", icon: "valine", link: "/webpack/6-vite" },
+      { text: "Umi", icon: "react", link: "/webpack/8-umi" },
+    ],
+  },
+  {
+    text: "性能优化",
+    icon: "launch",
+    children: [
+      { text: "界面交互", icon: "chrome", link: "/performance/2-interactive" },
+      { text: "性能指标", icon: "ability", link: "/performance/3-target" },
+      { text: "缓存技术", icon: "cache", link: "/performance/5-cache" },
+      { text: "Nginx", icon: "nginx", link: "/performance/6-nginx" },
     ],
   },
 ]);
