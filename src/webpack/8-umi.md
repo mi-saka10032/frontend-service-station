@@ -50,7 +50,7 @@ pnpm install -g create-umi
 
 ### 创建新项目
 
-::: code-tabs@shell
+::: code-tabs#shell
 
 @tab npm
 

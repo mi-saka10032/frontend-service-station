@@ -10,7 +10,7 @@ actions:
     link: /base/
     type: primary
 
-  - text: 从Vue2框架开始
+  - text: 从Vue开始
     link: /vue2/1-简介.md
     type: primary
 
@@ -89,6 +89,19 @@ features:
     icon: launch
     details: 内存优化、交互优化、性能指标优化、WebWorker、缓存技术、PWA、Nginx
     link: /performance/1-memory.md
+
+  - title: 前端设计模式
+    icon: process
+    details: 工厂模式、装饰器模式、观察者模式等
+    link: /design/1-简介.md
 copyright: false
 footer: false
 ---
+
+## 🚀 快捷离线使用
+
+谷歌浏览器设置 -> 更多工具 -> 创建为快捷方式（在窗口中打开）
+
+Edge 浏览器设置 -> 应用 -> 将此站点作为应用安装
+
+都可以将这个站点创建为桌面的无浏览器 UI 的快捷离线应用哦~（手机端需要使用手机版谷歌或 Edge 且大部分安卓系统都不支持）
