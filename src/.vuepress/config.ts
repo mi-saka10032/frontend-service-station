@@ -8,19 +8,5 @@ export default defineUserConfig({
   theme,
   title: "前端加油站",
   shouldPrefetch: false,
-  plugins: [
-    searchProPlugin({
-      indexContent: true,
-      customFields: [
-        {
-          getter: (page: Page) => page.frontmatter.category,
-          formatter: "分类：$content",
-        },
-        {
-          getter: (page: Page) => page.frontmatter.tag,
-          formatter: "标签：$content",
-        },
-      ],
-    }),
-  ],
+  plugins: [searchProPlugin({ indexContent: true })],
 });

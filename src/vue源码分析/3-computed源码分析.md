@@ -554,7 +554,7 @@ computed 是三种 watcher 之一的 computed-watcher，也是最复杂的 watch
    - 该高阶 getter 函数中，从 `this` 中取出之前已创建好的 `this._computedWatchers[key]` 对象，其实就是对应的 watcher 实例
    - 每次 getter 的调用，会先判断 watcher 实例的值是否更新（此处记为 dirty，true 表示已更新且未调用 getter，false 表示调用过 getter 无需更新）
    - 如果 watcher 实例更新，则调用 watcher 的 getter 方法获取依赖值，并执行依赖收集
-   - **非常重要！！**因为 computed-watcher 本身并不具备依赖收集器 dep，为了保证 computed-A 依赖于 computed-B，B 数据变化时 A 能够正确收到更新通知也发生变化，亦或是 user-watcher 能够正确监听到 computed 属性变化，此时需要判断当前处于活化状态的 Dep.target，表明是与当前 watcher 实例密切关联的 watcher 实例，然后手动开启依赖收集`watcher.depend()`
+   - **非常重要**！！因为 computed-watcher 本身并不具备依赖收集器 dep，为了保证 computed-A 依赖于 computed-B，B 数据变化时 A 能够正确收到更新通知也发生变化，亦或是 user-watcher 能够正确监听到 computed 属性变化，此时需要判断当前处于活化状态的 Dep.target，表明是与当前 watcher 实例密切关联的 watcher 实例，然后手动开启依赖收集`watcher.depend()`
    - 因为当前函数内仅有 watcher 实例，因此 dep 实例也需要存储在 watcher 实例中，在 watcher 实例中完成依赖的 depend、add、remove 等操作，虽然增加了 Dep 和 Watcher 之间的耦合度，但是解决了嵌套依赖不能正确响应的问题
    - 在将当前 computed 相关的所有 watcher 实例通知相关的 dep 实例收集完成之后，`this.value = 依赖值`，最后 dirty 置为 false
    - 如果 watcher 实例无需更新，则直接返回 watcher.value，即依赖对象原有的 getter 的值。因为 watcher 实例只要不去更新，`this.value`就稳定不变，因此 computed 在依赖值不更新时，默认直接返回实例的 value 值，而不是去调用 getter 方法获取，此为惰性取值

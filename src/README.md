@@ -52,7 +52,7 @@ features:
 
   - title: Typescript
     icon: typescript
-    details: Typescript、基础类型、面向对象
+    details: Typescript、基础类型、面向对象、装饰器
     link: /typescript/base.md
 
   - title: Vue2
