@@ -119,6 +119,24 @@ export default defineConfig({
 });
 ```
 
+jsconfig.json
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "react/*": ["src/react/*"],
+      "react-dom/*": ["src/react-dom/*"],
+      "react-reconciler/*": ["src/react-reconciler/*"],
+      "scheduler/*": ["src/scheduler/*"],
+      "shared/*": ["src/shared/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}
+```
+
 ## 源码
 
 手动实现 JSX-VDOM 的源码

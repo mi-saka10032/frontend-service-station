@@ -243,7 +243,7 @@ console.log(root);
 
 ### FiberNode
 
-为 FiberRootNode.current 创建 FiberNode 节点
+为 FiberRootNode.current 创建 FiberNode 节点，根节点的 FiberNode 也称为 HostRootFiber
 
 FiberNode 是真正与所有节点相关联的节点属性，包含大量属性值
 
@@ -332,3 +332,171 @@ export function createHostRootFiber() {
 - 正常来说，先有虚拟 DOM -> Fiber 节点 -> 真实 DOM
 - 根节点在一开始就已经存在了 div#root，所以对于根节点只需要创建 Fiber 节点即可
 - current 是有特殊含义的，代表当前节点对应的 Fiber，在 render 阶段会根据组件树的结构来构建 Fiber 节点链
+
+### UpdateQueue
+
+创建完根 FiberNode 节点后，新建更新队列
+
+更新队列为单向循环链表，头尾相连
+
+注：更新队列采取单循环链表的原因，个人猜测应该是为了无需遍历更新队列，直接获取头部节点和尾部节点，并完成快速地新老更新队列拼接
+
+prototype.render && updateContainer
+
+```js
+import {
+  createContainer,
+  updateContainer,
+} from "react-reconciler/src/ReactFiberReconciler";
+
+function ReactDOMRoot(internalRoot) {
+  this._internalRoote = internalRoot;
+}
+
+ReactDOMRoot.prototype.render = function (children) {
+  const root = this._internalRoote;
+  updateContainer(children, root);
+};
+
+export function createRoot(container) {
+  // div#root
+  const root = createContainer(container);
+  return new ReactDOMRoot(root);
+}
+```
+
+initialUpdateQueue
+
+```js
+import { createHostRootFiber } from "./ReactFiber";
+import { initialUpdateQueue } from "./ReactFiberClassUpdateQueue";
+
+function FiberRootNode(containerInfo) {
+  this.containerInfo = containerInfo;
+}
+
+export function createFiberRoot(containerInfo) {
+  const root = new FiberRootNode(containerInfo);
+  // HostRoot指的是根节点div#root
+  const uninitializedFiber = createHostRootFiber();
+  // 根容器的current指向当前的根fiber
+  root.current = uninitializedFiber;
+  // 根fiber的stateNode，真实DOM节点指向FiberRootNode
+  uninitializedFiber.stateNode = root;
+  initialUpdateQueue(uninitializedFiber);
+  return root;
+}
+```
+
+updateContainer
+
+```js
+import { createFiberRoot } from "./ReactFiberRoot";
+import { createUpdate, enqueueUpdate } from "./ReactFiberClassUpdateQueue";
+
+export function createContainer(containerInfo) {
+  return createFiberRoot(containerInfo);
+}
+
+/**
+ * 更新容易，把虚拟DOM Element变成真实DOM插入到container容器中
+ * @param element 虚拟DOM
+ * @param container DOM容器 FiberRootNode containerInfo div#root
+ */
+export function updateContainer(element, container) {
+  // 获取当前的根fiber
+  const current = container.current;
+  // 创建更新
+  const update = createUpdate();
+  // 要更新的虚拟DOM
+  update.payload = { element };
+  // 添加至current根Fiber的更新队列
+  const root = enqueueUpdate(current, update);
+}
+```
+
+Update
+
+```js
+import { markUpdateLaneFromFiberToRoot } from "react-reconciler/src/ReactFiberConcurrentUpdate";
+
+export function initialUpdateQueue(fiber) {
+  // 创建一个新的更新队列
+  const queue = {
+    shared: {
+      // pending是一个循环链表
+      pending: null,
+    },
+  };
+  fiber.updateQueue = queue;
+}
+
+export function createUpdate() {
+  const update = {};
+  return update;
+}
+
+export function enqueueUpdate(fiber, update) {
+  const updateQueue = fiber.updateQueue;
+  // 取出fiber上已有的老的更新链表pending
+  const pending = updateQueue.shared.pending;
+  if (pending === null) {
+    // pending不存在则直接将新的更新链表挂载上去
+    update.next = update;
+  } else {
+    // pending存在，注意pending为循环链表
+    // 新链表update的尾部next指向老pending链表的头部（尾部的next即指向头部）
+    update.next = pending.next;
+    // 老pending链表尾部next指向新链表update的头部
+    pending.next = update;
+  }
+  // 最终结果：pending要指向最后一个更新，最后一个更新next指向第一个更新，构成单向循环链表
+  updateQueue.shared.pending = update;
+  // 返回根节点 从当前的fiber到根节点（涉及到优先级队列，此处暂时不考虑优先级）
+  return markUpdateLaneFromFiberToRoot(fiber);
+}
+```
+
+markUpdateLaneFromFiberToRoot
+
+```js
+/**
+ * 此文件本来还需要考虑处理优先级问题
+ * 现在只实现找到根节点的功能
+ */
+import { HostRoot } from "react-reconciler/src/ReactWorkTags";
+
+export function markUpdateLaneFromFiberToRoot(sourceFiber) {
+  let node = sourceFiber; // 当前fiber
+  let parent = sourceFiber.return; // 当前fiber的父fiber
+  while (parent !== null) {
+    node = parent;
+    parent = parent.return;
+  }
+  // 一直找到parent为null：根节点Fiber(HostRootFiber)
+  if (node.tag === HostRoot) {
+    // 返回根节点的stateNode: FiberRootNode
+    return node.stateNode;
+  }
+  return null;
+}
+```
+
+main.jsx
+
+```jsx
+import { createRoot } from "react-dom/client";
+
+const element = (
+  <h1>
+    hello<span style={{ color: "red" }}>world</span>
+  </h1>
+);
+
+const root = createRoot(document.getElementById("root"));
+// 把element虚拟DOM挂载到容器中
+root.render(element);
+```
+
+![UpdateQueueResult](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/updateQueue.png)
+
