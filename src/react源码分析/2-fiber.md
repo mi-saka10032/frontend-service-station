@@ -4,7 +4,7 @@ order: 2
 category: false
 tag:
   - Fiber
-  - 单向链表
+  - 链表
   - 深度优先
   - 屏幕刷新率
   - 让渡执行权
@@ -500,3 +500,600 @@ root.render(element);
 
 ![UpdateQueueResult](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/updateQueue.png)
 
+### BeginWork
+
+建立好更新队列后，开始创建后台节点链表 WorkInProgress，同时启动 beginWork 任务扫描虚拟 DOM（递归的递阶段），beginWork 会在子节点没有 child 时结束
+
+首先派发更新计划
+
+```js
+import { createFiberRoot } from "./ReactFiberRoot";
+import { createUpdate, enqueueUpdate } from "./ReactFiberClassUpdateQueue";
+import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
+
+export function createContainer(containerInfo) {
+  return createFiberRoot(containerInfo);
+}
+
+/**
+ * 更新容易，把虚拟DOM Element变成真实DOM插入到container容器中
+ * @param element 虚拟DOM
+ * @param container DOM容器 FiberRootNode containerInfo div#root
+ */
+export function updateContainer(element, container) {
+  // 获取当前的根fiber
+  const current = container.current;
+  // 创建更新
+  const update = createUpdate();
+  // 要更新的虚拟DOM
+  update.payload = { element };
+  // 添加至current根Fiber的更新队列
+  const root = enqueueUpdate(current, update);
+  // 派发更新计划
+  scheduleUpdateOnFiber(root);
+}
+```
+
+第二步：首次渲染执行根节点同步渲染，做两件事：1、创建后台进程节点 workInProgress；2、调用浏览器 requestIdleCallback 开启闲时 Fiber 树重构
+
+第三步：开启浏览器空闲时间碎片化加载的功能之后，将会循环调用 performUnitOfWork（工作单元执行方法），碎片化地执行 beginWork 方法，当然了，beginWork 方法之中藏有结束循环的条件，那就是后台进程节点 workInProgress 为 null 的时候，没有剩余的工作单元，也就结束了整个 Fiber 树的构建
+
+```js
+import { scheduleCallback } from "scheduler/index";
+import { createWorkInProgress } from "./ReactFiber";
+import { beginWork } from "./ReactFiberBeginWork";
+// import { completeWork } from './ReactFiberCompleteWork';
+
+let workInProgress = null;
+
+/**
+ * 计划更新root
+ * 源码中此处有一个调度任务的功能
+ * @param {*}root
+ */
+export function scheduleUpdateOnFiber(root) {
+  // 确保调度执行root上的更新
+  ensureRootIsScheduled(root);
+}
+
+function ensureRootIsScheduled(root) {
+  // 告诉浏览器要执行performConcurrentWorkOnRoot函数，参数为root
+  scheduleCallback(performConcurrentWorkOnRoot.bind(null, root));
+}
+
+/**
+ * 开始根据fiber构建fiber树，要创建真实的DOM节点，再把真实的DOM节点插入容器
+ * @param {*} root
+ */
+function performConcurrentWorkOnRoot(root) {
+  // 第一次渲染以同步的方式渲染根节点，初次渲染的时候，都是同步执行
+  renderRootSync(root);
+}
+
+function prepareFreshStack(root) {
+  workInProgress = createWorkInProgress(root.current, null);
+}
+
+function renderRootSync(root) {
+  // 开始构建fiber树
+  // 双缓冲技术，页面显示区域为current映射，对应真实DOM，代表当前已经渲染完成的Fiber
+  // 内存中的Fiber构建、比较、更新为workInProgress映射，表示还未生效，没有更新的DOM上的Fiber树
+  // 1. current的HostRootFiber在构建过程中不作变化
+  // 2. workInProgress在内存中顺序构建Fiber树
+  prepareFreshStack(root);
+  workLoopSync();
+}
+
+function workLoopSync() {
+  while (workInProgress !== null) {
+    performUnitOfWork(workInProgress);
+  }
+}
+
+/**
+ * 执行一个工作单元
+ * @param unitOfWork
+ */
+function performUnitOfWork(unitOfWork) {
+  // 获取新fiber对应的老fiber，是页面上显示的current的fiber
+  const current = unitOfWork.alternate;
+  // 完成当前fiber的子fiber链表构建
+  const next = beginWork(current, unitOfWork);
+  // 同步工作单元中的props
+  unitOfWork.memoizedProps = unitOfWork.pendingProps;
+  // 没有子节点，表示工作单元递归的 递 阶段已结束，需要return执行completeWork
+  if (next === null) {
+    workInProgress = null;
+    // 没有子节点，表示当前fiber的beginWork已经完成，执行completeWork
+  } else {
+    workInProgress = next;
+  }
+}
+```
+
+createWorkInProgress 后台节点创建
+
+```js
+import { HostRoot } from "./ReactWorkTags";
+import { NoFlags } from "./ReactFiberFlags";
+
+/**
+ *
+ * @param tag fiber类型，函数组件0、类组件1、原生组件5、根元素3
+ * @param pendingProps 新属性，等待处理或者生效的属性
+ * @param key 唯一标识
+ * @constructor
+ */
+export function FiberNode(tag, pendingProps, key) {
+  this.tag = tag;
+  this.key = key;
+  this.type = null; // fiber类型，来自于虚拟DOM节点的type span div a
+  this.stateNode = null; // 对应真实的DOM节点
+
+  this.return = null; // 指向父节点
+  this.child = null; // 指向第一个子节点
+  this.sibling = null; // 指向弟节点
+  this.index = 0; // 索引初始为0
+
+  // 虚拟DOM提供pendingProps用于创建fiber节点的属性
+  this.pendingProps = pendingProps; // 等待生效的属性
+  this.memoizedProps = null; // 已经生效的属性
+
+  // 每个fiber会有自己的状态，每一种fiber状态存的类型不一样
+  // 类组件对应的fiber存的是类实例状态，HostRoot存的是待渲染元素
+  this.memoizedState = null;
+  // 每个fiber身上可能还有更新队列
+  this.updateQueue = null;
+  // 副作用的标识，表示要针对此Fiber节点进行何种操作
+  this.flags = NoFlags;
+  // 子节点对应的副作用标识
+  this.subtreeFlags = NoFlags;
+  // 轮替节点
+  this.alternate = null;
+  // We use a double buffering pooling technique because we know that we'll
+  // only ever need at most two versions of a tree. We pool the "other" unused
+  // node that we're free to reuse.
+
+  // This is lazily created to avoid allocating
+  // extra objects for things that are never updated. It also allows us to
+  // reclaim the extra memory if needed.
+}
+
+export function createFiber(tag, pendingProps, key) {
+  return new FiberNode(tag, pendingProps, key);
+}
+
+export function createHostRootFiber() {
+  return createFiber(HostRoot, null, null);
+}
+
+/**
+ * 基于老fiber和新属性创建新的fiber
+ * @param current 老fiber
+ * @param pendingProps 新属性
+ */
+export function createWorkInProgress(current, pendingProps) {
+  let workInProgress = current.alternate;
+  // 首次渲染时为null
+  if (workInProgress === null) {
+    workInProgress = createFiber(current.tag, pendingProps, current.key);
+    workInProgress.type = current.type;
+    workInProgress.stateNode = current.stateNode;
+    // 双向指针
+    workInProgress.alternate = current;
+    current.alternate = workInProgress;
+  } else {
+    workInProgress.pendingProps = pendingProps;
+    workInProgress.type = current.type;
+    // 副作用清空
+    workInProgress.flags = NoFlags;
+    workInProgress.subtreeFlags = NoFlags;
+  }
+  workInProgress.child = current.child;
+  workInProgress.sibling = current.sibling;
+  workInProgress.index = current.index;
+  workInProgress.memoizedProps = current.memoizedProps;
+  workInProgress.memoizedState = current.memoizedState;
+  workInProgress.updateQueue = current.updateQueue;
+  return workInProgress;
+}
+```
+
+闲时加载
+
+```js
+// 后面再考虑实现优先队列
+export function scheduleCallback(callback) {
+  // 告诉浏览器在空余时间调用回调
+  requestIdleCallback(callback);
+}
+```
+
+然后是关键任务 beginWork，对虚拟 DOM 启动 tag 判断，不同类型的 tag 执行不同情况的 update 更新，对于当前的简单 JSX 模型，我们只判断 JSX 根组件(HostRoot--updateHostRoot)和原生标签组件(HostComponent--updateHostComponent)的情况执行更新
+
+```js
+import logger from "shared/logger";
+import {
+  HostComponent,
+  HostRoot,
+  HostText,
+} from "react-reconciler/src/ReactWorkTags";
+import { processUpdateQueue } from "./ReactFiberClassUpdateQueue";
+import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
+import { shouldSetTextContent } from "react-dom/src/client/ReactDOMHostConfig";
+
+/**
+ * 根据新的虚拟DOM生成新的Fiber链表
+ * @param current 老的父Fiber
+ * @param workInProgress 新的父Fiber
+ * @param nextChildren 新的子虚拟DOM
+ */
+function reconcileChildren(current, workInProgress, nextChildren) {
+  if (current === null) {
+    // 新fiber没有老fiber，说明为首次创建挂载
+    // 虚拟DOM首次创建时走这里
+    workInProgress.child = mountChildFibers(workInProgress, null, nextChildren);
+  } else {
+    // 有老Fiber，需要做DOM-DIFF，拿老的子fiber链表和新的子虚拟DOM进行最小量更新
+    // root节点首次创建时走这里
+    workInProgress.child = reconcileChildFibers(
+      workInProgress,
+      current.child,
+      nextChildren
+    );
+  }
+}
+
+function updateHostRoot(current, workInProgress) {
+  // 需要知道的它的子虚拟DOM，知道它儿子的虚拟DOM信息
+  processUpdateQueue(workInProgress); // workInProgress.memoizedState = { element  }
+  const nextState = workInProgress.memoizedState;
+  const nextChildren = nextState.element;
+  // 协调子节点，diff算法
+  // 根据新的虚拟DOM生成子fiber链表
+  reconcileChildren(current, workInProgress, nextChildren);
+  return workInProgress.child;
+}
+
+/**
+ * 构建原生组件的子fiber链表
+ * @param current 老fiber
+ * @param workInProgress 新fiber
+ */
+function updateHostComponent(current, workInProgress) {
+  const { type, pendingProps: nextProps } = workInProgress;
+  let nextChildren = nextProps.children;
+  // 是否直接设置文本节点，如果是则直接启动优化，不再判断children
+  const isDirectTextChildren = shouldSetTextContent(type, nextProps);
+  if (isDirectTextChildren) {
+    nextChildren = null;
+  }
+  reconcileChildren(current, workInProgress, nextChildren);
+  return workInProgress.child;
+}
+
+/**
+ * 目标是根据虚拟DOM构建新的fiber子链表
+ * @param current 老fiber
+ * @param workInProgress 新fiber
+ */
+export function beginWork(current, workInProgress) {
+  logger("beginWork", workInProgress);
+  debugger;
+  switch (workInProgress.tag) {
+    case HostRoot:
+      return updateHostRoot(current, workInProgress);
+    case HostComponent:
+      return updateHostComponent(current, workInProgress);
+    case HostText:
+      return null;
+    default:
+      return null;
+  }
+}
+```
+
+```js
+export function shouldSetTextContent(type, props) {
+  return (
+    typeof props.children === "string" || typeof props.children === "number"
+  );
+}
+```
+
+对于 HostRoot，我们需要补充更新队列（考虑到下一次更新时原来的更新队列中任务可能还没执行完）
+
+这里单向循环链表正式发挥作用，我们可以迅速地找到首尾更新节点，然后剪开变成单向链表，遍历老的单向链表更新拼接到新更新队列中，生成最新状态（仅概念层面理论，首次渲染还是不会生效）
+
+```js
+import { markUpdateLaneFromFiberToRoot } from "react-reconciler/src/ReactFiberConcurrentUpdate";
+import assign from "shared/assign";
+
+export const UpdateState = 0;
+
+export function initialUpdateQueue(fiber) {
+  // 创建一个新的更新队列
+  const queue = {
+    shared: {
+      // pending是一个循环链表
+      pending: null,
+    },
+  };
+  fiber.updateQueue = queue;
+}
+
+export function createUpdate() {
+  const update = { tag: UpdateState };
+  return update;
+}
+
+export function enqueueUpdate(fiber, update) {
+  const updateQueue = fiber.updateQueue;
+  // 取出fiber上已有的老的更新链表pending
+  const pending = updateQueue.shared.pending;
+  if (pending === null) {
+    // pending不存在则直接将新的更新链表挂载上去
+    update.next = update;
+  } else {
+    // pending存在，注意pending为循环链表
+    // 新链表update的尾部next指向老pending链表的头部（尾部的next即指向头部）
+    update.next = pending.next;
+    // 老pending链表尾部next指向新链表update的头部
+    pending.next = update;
+  }
+  // 最终结果：pending要指向最后一个更新，最后一个更新next指向第一个更新，构成单向循环链表
+  updateQueue.shared.pending = update;
+  // 返回根节点 从当前的fiber到根节点（涉及到优先级队列，此处暂时不考虑优先级）
+  return markUpdateLaneFromFiberToRoot(fiber);
+}
+
+/**
+ * 根据老状态和更新队列中的更新计算最新状态
+ * @param workInProgress 要计算的fiber
+ */
+export function processUpdateQueue(workInProgress) {
+  const queue = workInProgress.updateQueue;
+  const pendingQueue = queue.shared.pending;
+  // 如果有更新，或者更新队列里有内容
+  if (pendingQueue !== null) {
+    // 清除等待生效的更新
+    queue.shared.pending = null;
+    // 拿到最后一个等待生效的更新 update = { payload: { element: 'h1' } }
+    const lastPendingUpdate = pendingQueue;
+    // 指向第一个更新
+    const firstPendingUpdate = lastPendingUpdate.next;
+    // 剪开更新链表，变成单链表
+    lastPendingUpdate.next = null;
+    // 获取老状态 null
+    let newState = workInProgress.memoizedState;
+    let update = firstPendingUpdate;
+    while (update) {
+      // 根据老状态和更新，计算新状态
+      newState = getStateFromUpdate(update, newState);
+      update = update.next;
+    }
+    // 把最终计算到的状态赋值给memoizedState
+    workInProgress.memoizedState = newState;
+  }
+}
+
+/**
+ * 根据老状态和更新计算新状态
+ * @param update 更新时的对象，含多种类型
+ * @param prevState
+ */
+function getStateFromUpdate(update, prevState) {
+  switch (update.tag) {
+    case UpdateState:
+      const { payload } = update;
+      return assign({}, prevState, payload);
+  }
+}
+```
+
+接下来是执行更新时调用 reconcileChildren 协调子节点的函数，这里需要判断 current 是否为 null 的情况，存在两种情况：
+
+1. 新 fiber 没有老 fiber，虚拟 DOM 中的节点首次挂载时执行 mountChildFibers
+2. 存在老 fiber 需要执行 DOM-DIFF，后续的虚拟 DOM 更新会从这里执行，root 节点首次创建后协调虚拟 DOM 的根节点时也会执行 reconcileChildFibers
+
+- 两种方法最终收束为同一个函数 createChildReconciler 的返回值，通过 shouldTracksSideEffects 副作用标识来区分
+- 在分辨出首次挂载或更新的情况后，开始创建子协调器 Fiber，目前暂时只判断虚拟 DOM 的`$$typeof`为原生组件类型(REACT_ELEMENT_TYPE)，或者组件存在 children 数组的虚拟 DOM 的情况
+- 完成了 reconcileChildFibers 创建完成子 Fiber 后，将子 Fiber 返回给当前后台节点 workInProgress 的 child，这里如果父 Fiber 只有一个子节点那么这个子节点就是 child，如果父 Fiber 下存在子节点数组（虚拟 DOM 的 props:children 数组），那么 children 中的第一个子节点会作为父 Fiber 的 child
+- child 作为 beginWork 的返回值将结束 beginWork 的调用，这里我们称其为 next。当 next 不为空，也就是仍存在 child 的情况下，next 会继续指向给后台节点 workInProgress，继续向下查找节点 child（深度优先 DFS），直到不存在更深层次的 child，next 为 null，此时 workInProgress 设为 null，结束工作单元调用，beginWork 正式结束
+
+注意：此处更新的情况只考虑新节点插入(Placement)的情况
+
+```js
+/**
+ * @param shouldTracksSideEffects 是否跟踪副作用
+ */
+import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
+import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
+import { Placement } from "react-reconciler/src/ReactFiberFlags";
+import isArray from "shared/isArray";
+
+function createChildReconciler(shouldTracksSideEffects) {
+  function reconcileSingleElement(returnFiber, currentFirstFiber, element) {
+    // 初次挂载 currentFirstFiber为null，可以直接根据虚拟DOM创建新的Fiber节点
+    const created = createFiberFromElement(element);
+    created.return = returnFiber;
+    return created;
+  }
+
+  /**
+   * 设置副作用
+   * @param newFiber
+   * @param newIndex
+   */
+  function placeSingleChild(newFiber, newIndex) {
+    // 如果为true，说明要添加副作用
+    if (shouldTracksSideEffects) {
+      // 副作用标识：插入DOM节点，在最后的提交阶段插入此节点
+      // React的渲染分渲染（创建Fiber树）和提交（更新真实DOM）两个阶段
+      newFiber.flags |= Placement;
+    }
+    return newFiber;
+  }
+
+  function placeChild(newFiber, newIndex) {
+    newFiber.index = newIndex;
+    if (shouldTracksSideEffects) {
+      // 如果一个fiber的flags上有placement，说明此节点需要创建真实DOM，插入到父容器中
+      // 如果父fiber初次挂载，shouldTracksSideEffects为false，不需要添加flags
+      // 这种情况下会在完成阶段把所有子阶段全部添加到自己身上
+      newFiber.flags |= Placement;
+    }
+  }
+
+  function createChild(returnFiber, newChild) {
+    if (
+      (typeof newChild === "string" && newChild !== "") ||
+      typeof newChild === "number"
+    ) {
+      // 创建虚拟DOM文本节点
+      const created = createFiberFromText(`${newChild}`);
+      created.return = returnFiber;
+      return created;
+    } else if (typeof newChild === "object" && newChild !== null) {
+      switch (newChild.$$typeof) {
+        case REACT_ELEMENT_TYPE: {
+          const created = createFiberFromElement(newChild);
+          created.return = returnFiber;
+          return created;
+        }
+        default:
+          break;
+      }
+    }
+    return null;
+  }
+
+  function reconcilerChildrenArray(
+    returnFiber,
+    currentFirstFiber,
+    newChildren
+  ) {
+    let resultingFirstChild = null; // 返回的第一个新儿子
+    let previousNewFiber = null; // 之前的新fiber
+    let newIndex = 0;
+    // 遍历虚拟DOM根节点内的首层newChildren类型并生成不同fiber
+    for (; newIndex < newChildren.length; newIndex++) {
+      const newFiber = createChild(returnFiber, newChildren[newIndex]);
+      if (newFiber === null) continue;
+      // 把新fiber放到索引位置
+      placeChild(newFiber, newIndex);
+      if (previousNewFiber === null) {
+        // 这是第一个newFiber
+        resultingFirstChild = newFiber;
+      } else {
+        // 不是第一个newFiber
+        previousNewFiber.sibling = newFiber;
+      }
+      // 让newFiber成为上一个子Fiber
+      previousNewFiber = newFiber;
+    }
+    return resultingFirstChild;
+  }
+
+  /**
+   * 比较协调子fibers DOM-DIFF：用老的子fiber链表和新的虚拟DOM进行比较的过程
+   * @param returnFiber 新的父fiber
+   * @param currentFirstFiber current一般来说指老fiber的第一个子fiber
+   * @param newChild 新的子虚拟DOM
+   */
+  function reconcileChildFibers(returnFiber, currentFirstFiber, newChild) {
+    // 现在暂时只考虑新节点只有一个的情况
+    if (typeof newChild === "object" && newChild !== null) {
+      switch (newChild.$$typeof) {
+        case REACT_ELEMENT_TYPE:
+          return placeSingleChild(
+            reconcileSingleElement(returnFiber, currentFirstFiber, newChild)
+          );
+        default:
+          break;
+      }
+    }
+    // newChild [文本节点， span虚拟元素]
+    if (isArray(newChild)) {
+      return reconcilerChildrenArray(returnFiber, currentFirstFiber, newChild);
+    }
+    return null;
+  }
+
+  return reconcileChildFibers;
+}
+
+// 虚拟DOM初次挂载
+export const mountChildFibers = createChildReconciler(false);
+//老fiber更新
+export const reconcileChildFibers = createChildReconciler(true);
+
+/**
+ * 根据虚拟DOM，创建Fiber节点
+ * @param element
+ */
+export function createFiberFromElement(element) {
+  const { type, key, props: pendingProps } = element;
+  return createFiberFromTypeAndProps(type, key, pendingProps);
+}
+
+function createFiberFromTypeAndProps(type, key, pendingProps) {
+  let tag = IndeterminateComponent;
+  if (typeof type === "string") {
+    // type为字符串，说明是原生组件，div p span
+    tag = HostComponent;
+  }
+  const fiber = createFiber(tag, pendingProps, key);
+  fiber.type = type;
+  return fiber;
+}
+
+export function createFiberFromText(content) {
+  return createFiber(HostText, content, null);
+}
+```
+
+关于 logger
+
+为了能清楚看到 beginWork 的调用顺序，我们在 beginWork 方法开始的时候加入了 logger 打印日志方法，以便我们能看到 workInProgress 深度遍历的子节点情况
+
+```js
+import * as ReactWorkTags from "react-reconciler/src/ReactWorkTags";
+
+const ReactWorkTagsMap = new Map();
+for (const tag in ReactWorkTags) {
+  ReactWorkTagsMap.set(ReactWorkTags[tag], tag);
+}
+
+export default function (prefix, workInProgress) {
+  let tagValue = workInProgress.tag;
+  let tagName = ReactWorkTagsMap.get(tagValue);
+  let str = ` ${tagName} `;
+  if (tagName === "HostComponent") {
+    str += ` ${workInProgress.type} `;
+  } else if (tagName === "HostText") {
+    str += ` ${workInProgress.pendingProps} `;
+  }
+  console.log(`${prefix} ${str}`);
+}
+```
+
+main.jsx
+
+```jsx
+import { createRoot } from "react-dom/client";
+
+const element = (
+  <h1>
+    hello<span style={{ color: "red" }}>world</span>
+  </h1>
+);
+
+const root = createRoot(document.getElementById("root"));
+// 把element虚拟DOM挂载到容器中
+root.render(element);
+```
+
+beginWork 输出结果，注意结合[递归创建 Fiber 树](#_4-递归构建-fiber-树)查看，整个 beginWork的循环 会在最后一个 child，也就是文本节点 hello 这个地方结束
+
+![beginWorkResult](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/beginWork-result.jpg)
