@@ -108,13 +108,6 @@ Webpack 的构建流程可以分为以下三大阶段：
 
 先来看看由 安装与使用 中最简单的项目构建出的 bundle.js 文件内容，代码如下：
 
-```html
-<p data-height="565" data-theme-id="0" data-slug-hash="NMQzxz" data-default-tab="js" data-user="whjin" data-embed-version="2" data-pen-title="bundle.js" class="codepen">See the Pen bundle.js by whjin (@whjin) on CodePen.</p>
-<script async src="static.codepen.io/ass...;></script>
-```
-
-以上看上去复杂的代码其实是一个立即执行函数，可以简写为如下：
-
 ```js
 // webpackBootstrap 启动函数
 // modules 即为存放所有模块的数组，数组中的每一个元素都是一个函数
@@ -182,6 +175,20 @@ Webpack 的构建流程可以分为以下三大阶段：
     },
   ]
 );
+```
+
+以上看上去复杂的代码其实是一个立即执行函数，可以简写为如下：
+
+```js
+(function (modules) {
+  // 模拟 require 语句
+  function __webpack_require__() {}
+
+  // 执行存放所有模块数组中的第0个模块
+  __webpack_require__(0);
+})([
+  /*存放所有模块的数组*/
+]);
 ```
 
 bundle.js 能直接运行在浏览器中的原因在于输出的文件中通过 `__webpack_require__` 函数定义了一个可以在浏览器中执行的加载函数来模拟 Node.js 中的 require 语句。

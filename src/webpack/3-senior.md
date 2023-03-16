@@ -857,3 +857,7 @@ module.exports = {
 ```
 
 生产环境优化构建性能主要考虑关闭 source-map。
+
+## 构建优化简单一图流
+
+![webpack构建优化一图流](https://misaka10032.oss-cn-chengdu.aliyuncs.com/Webpack/webpack-optimize.png)
