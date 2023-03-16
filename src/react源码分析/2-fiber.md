@@ -1094,6 +1094,230 @@ const root = createRoot(document.getElementById("root"));
 root.render(element);
 ```
 
-beginWork 输出结果，注意结合[递归创建 Fiber 树](#_4-递归构建-fiber-树)查看，整个 beginWork的循环 会在最后一个 child，也就是文本节点 hello 这个地方结束
+beginWork 输出结果，注意结合[递归创建 Fiber 树](#_4-递归构建-fiber-树)查看，整个 beginWork 的循环 会在最后一个 child，也就是文本节点 hello 这个地方结束
 
 ![beginWorkResult](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/beginWork-result.jpg)
+
+### CompleteWork
+
+completeWork 的任务执行时间节点发生在 beginWork 的返回值为 null 的时候
+
+在这之前我们已经了解到，beginWork 执行的是深度优先的子 Fiber 查找策略，在未能获取到下一级子 Fiber 时，beginWork 结束返回 null，执行 complete 任务更新 DOM（递归的归阶段）
+
+此处暂时只考虑虚拟 DOM 的挂载添加操作，其余 DOM 的更新、移动、删除等操作暂不实现，因此也不存在更新副作用
+
+首先在工作单元函数中更新 completeUnitOfWork
+
+```js
+/**
+ * 执行一个工作单元
+ * @param unitOfWork
+ */
+function performUnitOfWork(unitOfWork) {
+  // 获取新fiber对应的老fiber，是页面上显示的current的fiber
+  const current = unitOfWork.alternate;
+  // 完成当前fiber的子fiber链表构建
+  const next = beginWork(current, unitOfWork);
+  // 同步工作单元中的props
+  unitOfWork.memoizedProps = unitOfWork.pendingProps;
+  // 没有子节点，表示工作单元递归的 递 阶段已结束，需要return执行completeWork
+  if (next === null) {
+    // 没有子节点，表示当前fiber的beginWork已经完成，执行completeWork
+    completeUnitOfWork(unitOfWork);
+  } else {
+    workInProgress = next;
+  }
+}
+
+function completeUnitOfWork(unitOfWork) {
+  let completedWork = unitOfWork;
+  do {
+    // 替代fiber
+    const current = completedWork.alternate;
+    // 父fiber
+    const returnFiber = completedWork.return;
+    // 执行此fiber的完成工作
+    // 如果是原生组件，就是创建真实DOM节点
+    completeWork(current, completedWork);
+    // 如果有弟弟，构建弟弟对应的fiber子链表
+    const siblingFiber = completedWork.sibling;
+    if (siblingFiber !== null) {
+      // 如果存在兄弟节点，则workInProgress赋值兄弟节点，循环退出，等待下一次工作单元执行beginWork
+      workInProgress = siblingFiber;
+      return;
+    }
+    // 如果没有弟弟，说明这当前完成的就是父fiber的最后一个节点
+    // 也就是说一个父fiber，所有的子fiber全部完成了
+    completedWork = returnFiber;
+    workInProgress = completedWork;
+    // 执行递归的 归阶段，当兄弟节点为空的时候执行while循环往上返回，直到根fiber时退出循环
+  } while (completedWork !== null);
+}
+```
+
+然后是关键任务 completeWork，同样也是 tag 判断，对不同类型的 tag 对应的不同组件执行不同情况的 update 更新，这里暂时只实现 create 新建挂载操作
+
+在 completeWork 中，会对虚拟 DOM 执行真实 DOM 的创建与 append 操作，并且最后会有一个向上冒泡的方法 bubbleProperties，旨在将子节点的更新副作用不断向上传递汇聚
+
+```js
+import logger, { indent } from "shared/logger";
+import {
+  HostComponent,
+  HostRoot,
+  HostText,
+} from "react-reconciler/src/ReactWorkTags";
+import {
+  createInstance,
+  createTextInstance,
+  appendInitialChild,
+  finalizeInitialChildren,
+} from "react-dom/src/client/ReactDOMHostConfig";
+import { NoFlags } from "react-reconciler/src/ReactFiberFlags";
+
+/**
+ * 把当前完成的fiber所有子节点对应真实DOM都挂在到父parent真实DOM节点上
+ * @param parent 当前完成的fiber真实DOM节点
+ * @param workInProgress 完成的fiber
+ */
+function appendAllChildren(parent, workInProgress) {
+  let node = workInProgress.child;
+  while (node) {
+    if (node.tag === HostComponent || node.tag === HostText) {
+      // 如果子节点是原生节点或文本节点
+      appendInitialChild(parent, node.stateNode);
+    } else if (node.child !== null) {
+      // 如果第一个儿子不是原生节点，说明它可能是一个函数组件节点
+      node = node.child;
+      continue;
+    }
+    // 如果当前的节点没有弟弟
+    while (node.sibling === null) {
+      if (node.return === null || node.return === workInProgress) {
+        return;
+      }
+      // 回到父节点
+      node = node.return;
+    }
+    node = node.sibling;
+  }
+}
+
+/**
+ * 完成一个fiber节点
+ * @param current 老fiber
+ * @param workInProgress 新的构建fiber
+ */
+export function completeWork(current, workInProgress) {
+  logger(" ".repeat(indent.number) + "completeWork", workInProgress);
+  indent.number -= 2;
+  const newProps = workInProgress.pendingProps;
+  switch (workInProgress.tag) {
+    case HostRoot:
+      bubbleProperties(workInProgress);
+      break;
+    case HostComponent:
+      // 暂时只处理初次创建或挂载的新节点逻辑
+      // 创建真实的DOM节点
+      const { type } = workInProgress;
+      const instance = createInstance(type, newProps, workInProgress);
+      // 把自己所有的儿子都添加到自己身上
+      appendAllChildren(instance, workInProgress);
+      workInProgress.stateNode = instance;
+      finalizeInitialChildren(instance, type, newProps);
+      bubbleProperties(workInProgress);
+      break;
+    case HostText:
+      // 文本节点的props就是文本内容，直接创建真实的文本节点
+      const newText = newProps;
+      // 创建真实的DOM节点，并传入stateNode
+      workInProgress.stateNode = createTextInstance(newText);
+      // 向上冒泡属性
+      bubbleProperties(workInProgress);
+      break;
+  }
+}
+
+/**
+ * 属性冒泡，旨在向上收集子孙节点的更新副作用，当子节点不存在副作用时说明无需更新，便于diff优化
+ * @param completedWork
+ */
+function bubbleProperties(completedWork) {
+  let subtreeFlags = NoFlags;
+  let child = completedWork.child;
+  // 遍历当前fiber的所有子节点，把所有子节点的副作用及子节点的子节点副作用合并收集起来
+  while (child !== null) {
+    subtreeFlags |= child.subtreeFlags;
+    subtreeFlags |= child.flags;
+    child = child.sibling;
+  }
+  // 收集子节点的副作用，注意flags才是节点自己的副作用
+  completedWork.subtreeFlags = subtreeFlags;
+}
+```
+
+下面是初始化 DOM 实例和设置 prop 的方法
+
+```js
+import { setInitialProperties } from "react-dom/src/client/ReactDOMComponent";
+
+export function shouldSetTextContent(type, props) {
+  return (
+    typeof props.children === "string" || typeof props.children === "number"
+  );
+}
+
+export function createTextInstance(newText) {
+  return document.createTextNode(newText);
+}
+
+export function createInstance(type, newProps, workInProgress) {
+  const domElement = document.createElement(type);
+  // 属性的添加TODO updateFiberProps(domElement, props);
+  return domElement;
+}
+
+export function appendInitialChild(parent, child) {
+  parent.appendChild(child);
+}
+
+export function finalizeInitialChildren(domElement, type, props, hostContext) {
+  setInitialProperties(domElement, type, props);
+}
+```
+
+```js
+import { setValueForStyles } from "react-dom/src/client/CSSPropertyOperations";
+import setTextContent from "react-dom/src/client/setTextContent";
+import { setValueForProperty } from "react-dom/src/client/DOMPropertyOperations";
+
+const STYLE = "style";
+const CHILDREN = "children";
+
+function setInitialDOMProperties(tag, domElement, nextProps) {
+  for (const propKey in nextProps) {
+    if (nextProps.hasOwnProperty(propKey)) {
+      const nextProp = nextProps[propKey];
+      if (propKey === STYLE) {
+        setValueForStyles(domElement, nextProp);
+      } else if (propKey === CHILDREN) {
+        if (typeof nextProp === "string") {
+          setTextContent(domElement, nextProp);
+        } else if (typeof nextProp === "number") {
+          setTextContent(domElement, nextProp + "");
+        }
+      } else if (nextProp !== null) {
+        setValueForProperty(domElement, propKey, nextProp);
+      }
+    }
+  }
+}
+
+export function setInitialProperties(domElement, tag, props) {
+  setInitialDOMProperties(tag, domElement, props);
+}
+```
+
+completeWork输出结果，除了完整的child和sibling关系之外，注意每个Fiber的stateNode均已完成DOM元素挂载（原生元素节点、文本节点）
+
+![completeWorkResult](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/completeWork-result.jpg)
+
