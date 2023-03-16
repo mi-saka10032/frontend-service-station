@@ -649,7 +649,7 @@ if (!options.lazy) {
 
 ### 第二步：文件内容改变
 
-这一阶段，sockjs 是服务端和客户端的桥梁，启动 devServer 的时候，sockjs 在服务端和客户端建立了一个 webSocket 场链接，以便将编译和打包各阶段状态告知客户端，最关键的步骤还是 webpack-dev-server 调用 webpack api 监听 compile 的 done 事件，当 compile 完成后，webpack-dev-server 通过 `_sendStatus` 方法将编译打包后的**新模块 hash 值**发送到浏览器端
+这一阶段，sockjs 是服务端和客户端的桥梁，启动 devServer 的时候，sockjs 在服务端和客户端建立了一个 webSocket 长连接，以便将编译和打包各阶段状态告知客户端，最关键的步骤还是 webpack-dev-server 调用 webpack api 监听 compile 的 done 事件，当 compile 完成后，webpack-dev-server 通过 `_sendStatus` 方法将编译打包后的**新模块 hash 值**发送到浏览器端
 
 ```js
 // webpack-dev-server/lib/Server.js
