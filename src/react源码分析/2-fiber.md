@@ -1317,7 +1317,193 @@ export function setInitialProperties(domElement, tag, props) {
 }
 ```
 
-completeWork输出结果，除了完整的child和sibling关系之外，注意每个Fiber的stateNode均已完成DOM元素挂载（原生元素节点、文本节点）
+completeWork 输出结果，除了完整的 child 和 sibling 关系之外，注意每个 Fiber 的 stateNode 均已完成 DOM 元素挂载（原生元素节点、文本节点）
 
 ![completeWorkResult](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/completeWork-result.jpg)
 
+### CommitWork
+
+完成 BeginWork 和 CompleteWork 之后，Work 工作进入提交阶段 CommitWork，执行 DOM 节点的更新（增删改等操作）
+
+按照之前的工作单元渲染顺序，等到根节点渲染（renderRootSync）完成后，正式进入提交阶段
+
+```js
+/**
+ * 开始根据fiber构建fiber树，要创建真实的DOM节点，再把真实的DOM节点插入容器
+ * @param {*} root
+ */
+function performConcurrentWorkOnRoot(root) {
+  // 第一次渲染以同步的方式渲染根节点，初次渲染的时候，都是同步执行
+  renderRootSync(root);
+  // 开始进入提交阶段，就是执行副作用，修改真实DOM
+  const finishedWork = root.current.alternate;
+  root.finishedWork = finishedWork;
+  commitRoot(root);
+}
+
+function commitRoot(root) {
+  const { finishedWork } = root;
+  const subtreeHasEffects =
+    (finishedWork.subtreeFlags && MutationMask) !== NoFlags;
+  const rootHasEffect = (finishedWork.flags && MutationMask) !== NoFlags;
+  if (subtreeHasEffects || rootHasEffect) {
+    commitMutationEffectsOnFiber(finishedWork, root);
+  }
+  // 等DOM变更后，就可以把root的current指向新Fiber树
+  root.current = finishedWork;
+}
+```
+
+提交阶段分两步，第一步为 mutation，意为向上提交子节点的副作用；第二步才是真正的处理 DOM 操作
+
+```js
+/**
+ * 遍历Fiber树，执行fiber上的副作用
+ * @param finishedWork fiberJ节点
+ * @param root 根节点
+ */
+export function commitMutationEffectsOnFiber(finishedWork, root) {
+  switch (finishedWork.tag) {
+    case HostRoot:
+    case HostComponent:
+    case HostText:
+      // 遍历子节点，处理子节点上的副作用
+      recursivelyTraverseMutationEffects(root, finishedWork);
+      // 再处理自己身上的副作用
+      commitReconciliationEffects(finishedWork);
+      break;
+    default:
+      break;
+  }
+}
+
+function recursivelyTraverseMutationEffects(root, parentFiber) {
+  if (parentFiber.subtreeFlags & MutationMask) {
+    let { child } = parentFiber;
+    while (child !== null) {
+      commitMutationEffectsOnFiber(child, root);
+      child = child.sibling;
+    }
+  }
+}
+
+function commitReconciliationEffects(finishedWork) {
+  const { flags } = finishedWork;
+  if (flags && Placement) {
+    // 进行插入操作，也就是把此fiber对应的真实DOM节点添加到父真实DOM上
+    commitPlacement(finishedWork);
+    // 把flags里的Placement删除
+    finishedWork.flags &= ~Placement;
+  }
+}
+```
+
+commitPlacement：节点新增处理阶段，根据 tag 类型区别执行不同的插入操作，但总体分为两步：
+
+1. 获取最近的真实 DOM 节点：这一步发生在 getHostSibling 函数里，意为剥离 Class 节点或 Function 节点，获取到真正的原生节点或文本节点，如果当前 Fiber 的 sibling 中没有，就向上 return 查找，再查找 return 父节点的 sibling 或 child，寻找非空原生或文本节点
+2. 对于根节点 root 而言，首次挂载执行一个整体 DOM 的 append 即可（通过 isHost 判断）；非 root 节点遍历 child 和 sibling 执行 append。这一步发生在 insertOrAppendPlacementNode 函数里
+
+```js
+function isHostParent(fiber) {
+  return fiber.tag === HostComponent || fiber.tag === HostRoot; //只有根fiber或根组件节点才能作为父fiber
+}
+
+function getHostParentFiber(fiber) {
+  let parent = fiber.return;
+  while (parent !== null) {
+    if (isHostParent(parent)) {
+      return parent;
+    }
+    parent = parent.return;
+  }
+}
+/**
+ * 把此fiber的真实DOM插入到父DOM里
+ * @param finishedWork
+ */
+function commitPlacement(finishedWork) {
+  const parentFiber = getHostParentFiber(finishedWork);
+  switch (parentFiber.tag) {
+    case HostRoot: {
+      const parent = parentFiber.stateNode.containerInfo;
+      // 获取最近的真实DOM节点
+      const before = getHostSibling(finishedWork); // 获取最近的真实DOM节点
+      insertOrAppendPlacementNode(finishedWork, before, parent);
+      break;
+    }
+    case HostComponent: {
+      const parent = parentFiber.stateNode;
+      // 获取最近的真实DOM节点
+      const before = getHostSibling(finishedWork); // 获取最近的真实DOM节点
+      insertOrAppendPlacementNode(finishedWork, before, parent);
+      break;
+    }
+  }
+}
+
+/**
+ * 找到要插入的锚点
+ * 找到可以插在它前面的那个fiber对应的真实DOM
+ * @param fiber
+ */
+function getHostSibling(fiber) {
+  let node = fiber;
+  siblings: while (true) {
+    while (node.sibling === null) {
+      if (node.return === null || isHostParent(node.return)) {
+        return null;
+      }
+      node = node.return;
+    }
+    node = node.sibling;
+    // 如果弟弟不是原生节点or文本节点，不是要插入的节点，需要寻找弟弟或儿子
+    while (node.tag !== HostComponent || node.tag !== HostText) {
+      // 如果此节点是一个将要插入的新节点，找它的弟弟，否则找儿子
+      if (node.flags && Placement) {
+        continue siblings;
+      } else {
+        node = node.child;
+      }
+    }
+    if (!(node.flags && Placement)) {
+      return node.stateNode;
+    }
+  }
+}
+
+/**
+ * 把子节点对应的真实DOM插入到父节点DOM中
+ * @param node 将要插入的fiber节点
+ * @param before 待insertBefore的DOM节点
+ * @param parent 父真实DOM节点
+ */
+function insertOrAppendPlacementNode(node, before, parent) {
+  const { tag } = node;
+  // 判断此fiber对应的节点是不是真实DOM节点
+  const isHost = tag === HostComponent || tag === HostText;
+  if (isHost) {
+    // 如果是的话就直接插入
+    const { stateNode } = node;
+    if (before) {
+      insertBefore(parent, stateNode, before);
+    } else {
+      appendChild(parent, stateNode);
+    }
+  } else {
+    // 如果node不是真实DOM节点，获取它的child
+    const { child } = node;
+    if (child !== null) {
+      insertOrAppendPlacementNode(child, before, parent);
+      let { sibling } = child;
+      while (sibling !== null) {
+        insertOrAppendPlacementNode(sibling, before, parent);
+        sibling = sibling.sibling;
+      }
+    }
+  }
+}
+```
+
+至此，JSX 到 Fiber 到真实 DOM 的转化正式完成
+
+![commitWork-result](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/commitWork-result.jpg)
