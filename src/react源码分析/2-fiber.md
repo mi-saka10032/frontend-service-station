@@ -1507,3 +1507,7 @@ function insertOrAppendPlacementNode(node, before, parent) {
 至此，JSX 到 Fiber 到真实 DOM 的转化正式完成
 
 ![commitWork-result](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/commitWork-result.jpg)
+
+手写源码仓库：
+
+https://github.com/mi-saka10032/mini-react/tree/master/packages/fiber
