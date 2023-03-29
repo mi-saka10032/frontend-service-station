@@ -793,4 +793,4 @@ root.render(element);
 
 手写源码仓库：
 
-https://github.com/mi-saka10032/mini-react/tree/master/packages/function-component
+https://github.com/mi-saka10032/mini-react/tree/master/packages/events
