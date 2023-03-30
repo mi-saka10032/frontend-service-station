@@ -3,7 +3,6 @@ title: Hooks-Reducer
 order: 4
 category: false
 tag:
-  - Hooks
   - useReducer
   - 派发与更新
 ---
