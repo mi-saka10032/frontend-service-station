@@ -75,6 +75,11 @@ features:
     details: React基础、核心属性、脚手架、进阶用法、hooks、进阶技巧、组件通信、性能优化、React生态
     link: /react/1-简介.md
 
+  - title: React源码分析
+    icon: react
+    details: jsx、Fiber架构、事件委派、hook函数源码
+    link: /react源码分析/1-jsx.md
+
   - title: 前端渲染模式
     icon: page
     details: 前端渲染模式、CSR、SSR、SSG、ISR、VueCli的服务端渲染、Vite的服务端渲染、Nuxt框架
