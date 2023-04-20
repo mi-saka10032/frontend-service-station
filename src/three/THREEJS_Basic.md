@@ -158,7 +158,7 @@ Three.js 的核心可以说是它的场景图（scene graph）。场景图在 3D
 
 场景能够让你在什么地方、摆放什么东西来交给three.js来渲染，这是你放置物体、灯光和摄像机的地方。
 
-![image-20230306143525987](C:%5CUsers%5CASUS%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20230306143525987.png)
+
 
 |                             属性                             |                             描述                             |
 | :----------------------------------------------------------: | :----------------------------------------------------------: |
@@ -582,7 +582,6 @@ const camera = new THREE.PerspectiveCamera( 45, width / height, 1, 1000 );
 scene.add( camera );
 ```
 
-![image-20230307172930053](C:%5CUsers%5CASUS%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20230307172930053.png)
 
 #### 属性和方法
 
