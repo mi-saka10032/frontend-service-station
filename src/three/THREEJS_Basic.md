@@ -32,8 +32,7 @@ Scene场景是three.js的基本的组成部分。需要three.js绘制的东西�
 
 ## 创建第一个场景
 
-```js
-<html>
+```html
 	<head>
 		<meta charset="utf-8">
 		<title>第一个3D页面</title>
@@ -79,7 +78,6 @@ Scene场景是three.js的基本的组成部分。需要three.js绘制的东西�
 			animate();
 		</script>
 	</body>
-</html>
 ```
 
 接下来再来介绍一个完整3D世界的组成部分！
@@ -92,7 +90,7 @@ Scene场景是three.js的基本的组成部分。需要three.js绘制的东西�
 
 * ​			BoxGeometry --- 立体缓冲集合体
 
-  ```js
+  ```text
   BoxGeometry(width : Float, height : Float, depth : Float, widthSegments : Integer, heightSegments : Integer, depthSegments : Integer)
   width — X轴上面的宽度，默认值为1。
   height — Y轴上面的高度，默认值为1。
