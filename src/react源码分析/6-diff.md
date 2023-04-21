@@ -1762,7 +1762,7 @@ export const reconcileChildFibers = createChildReconciler(true);
 
 ![多节点diff复杂遍历打印结果](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/duo_jie_dian_diff_result.jpg)
 
-手写源码仓库：
+## 手写源码仓库
 
 https://github.com/mi-saka10032/mini-react/tree/master/packages/singledomdiff
 

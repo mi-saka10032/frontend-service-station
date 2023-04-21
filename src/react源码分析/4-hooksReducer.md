@@ -1711,6 +1711,6 @@ commitReducer 点击 button 两次后的控制台输出结果：
 
 ![commitReducerResult](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/commitReducerResult.jpg)
 
-手写源码仓库：
+## 手写源码仓库
 
 https://github.com/mi-saka10032/mini-react/tree/master/packages/reducer

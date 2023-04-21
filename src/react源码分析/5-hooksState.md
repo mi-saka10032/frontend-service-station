@@ -287,6 +287,6 @@ export function renderWithHooks(current, workInProgress, Component, props) {
 3. mountState 相比 mountReducer，在初始化 queue 对象时额外声明了 lastRenderedReducer 和 lastRenderedState 函数，同时设置的派发函数 dispatchSetState 会在执行调度更新前，先获取 queue 中的 lastRenderedReducer, lastRenderedState 预先执行一次赋值返回，通过`Object.is`浅比较判断值是否改变，如果没有改变则直接退出，一定程度上优化了 useState 的使用
 4. 需要注意的是，**当前没有加入异步调度的源码，因此一次 button 按钮点击同时调用多次 setNumber 触发多次更新情况时，只会执行最后一个调度任务**
 
-手写源码仓库：
+## 手写源码仓库
 
 https://github.com/mi-saka10032/mini-react/tree/master/packages/state

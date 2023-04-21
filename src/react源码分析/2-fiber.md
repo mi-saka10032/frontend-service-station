@@ -1508,6 +1508,6 @@ function insertOrAppendPlacementNode(node, before, parent) {
 
 ![commitWork-result](https://misaka10032.oss-cn-chengdu.aliyuncs.com/React/commitWork-result.jpg)
 
-手写源码仓库：
+## 手写源码仓库
 
 https://github.com/mi-saka10032/mini-react/tree/master/packages/fiber
