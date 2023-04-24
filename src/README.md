@@ -77,7 +77,7 @@ features:
 
   - title: React源码分析
     icon: react
-    details: jsx、Fiber架构、事件委派、hook函数源码
+    details: jsx、Fiber架构、事件委派、useReducer、useState、useEffect、diff算法、最小堆调度
     link: /react源码分析/1-jsx.md
 
   - title: 前端渲染模式
@@ -99,6 +99,11 @@ features:
     icon: process
     details: 工厂模式、装饰器模式、观察者模式等
     link: /design/1-简介.md
+
+  - title: THREE基础
+    icon: snow
+    details: 基础场景建立、几何体/场景/材质等属性整理
+    link: /three/THREEJS_Basic.md
 copyright: false
 footer: false
 ---
