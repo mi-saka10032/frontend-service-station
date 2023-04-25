@@ -252,7 +252,9 @@ use 数组逆序，链式调用（上述的 css-loader 调用顺序为 less-load
 
 #### 抽离
 
-**mini-css-extract-plugin：该插件基于 webpack5 构建，5 以下不支持**
+**mini-css-extract-plugin：对于 webpack4 它是一个第三方插件，而 webpack5 直接默认导出这个插件对象了，写法略有不同**
+
+webpack4，需要先安装再配置
 
 ```shell
 npm install mini-css-extract-plugin -D
@@ -279,6 +281,29 @@ module: {
         }
     ]
 }
+```
+
+webpack5，直接引入无需安装
+
+```js
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+module.exports = {
+  // ...
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+    ],
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: "style.css",
+    }),
+  ],
+};
 ```
 
 打包后生成独立的 css 文件
@@ -610,7 +635,7 @@ module.exports = (env) => {
 
 #### npm 脚本
 
-package.json文件：
+package.json 文件：
 
 ```json
 "scripts": {
