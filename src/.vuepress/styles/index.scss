@@ -5,13 +5,13 @@
   border-radius: 10px;
   background-color: var(--bg-color-secondary);
 
-  &::after {
-      position: absolute;
-      content: 'Ctrl + K 搜索';
-      left: 35px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 14px;
-      color: var(--light-grey);
-    }
+  // &::after {
+    //     position: absolute;
+    //     content: 'Ctrl + K 搜索';
+    //     left: 35px;
+    //     top: 50%;
+    //     transform: translateY(-50%);
+    //     font-size: 14px;
+    //     color: var(--light-grey);
+    //   }
   }
