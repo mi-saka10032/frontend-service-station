@@ -1,7 +1,7 @@
 ---
 title: VueX
 order: 10
-category: false
+
 tag:
   - VueX
   - 全局状态管理

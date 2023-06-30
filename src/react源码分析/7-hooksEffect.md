@@ -1,7 +1,7 @@
 ---
 title: Hooks-Effect
 order: 7
-category: false
+
 tag:
   - useEffect
   - useLayoutEffect

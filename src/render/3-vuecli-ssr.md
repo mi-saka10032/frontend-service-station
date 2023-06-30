@@ -1,7 +1,7 @@
 ---
 title: VueCli服务端渲染指南
 order: 3
-category: false
+
 tag:
   - VueCli
   - 服务端渲染

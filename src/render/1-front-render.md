@@ -1,7 +1,7 @@
 ---
 title: 前端渲染模式
 order: 1
-category: false
+
 tag:
   - 前端渲染模式
   - 单页面应用SPA

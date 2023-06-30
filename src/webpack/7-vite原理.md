@@ -1,7 +1,7 @@
 ---
 title: Vite原理
 order: 7
-category: false
+
 tag:
   - Vite
   - 冷启动原理

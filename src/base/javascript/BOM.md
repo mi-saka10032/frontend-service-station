@@ -1,7 +1,7 @@
 ---
 title: BOM
 order: 5
-category: false
+
 tag:
   - Javascript基础
   - 浏览器顶级对象

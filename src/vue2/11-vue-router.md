@@ -1,7 +1,7 @@
 ---
 title: VueRouter
 order: 11
-category: false
+
 tag:
   - VueRouter
   - url监听

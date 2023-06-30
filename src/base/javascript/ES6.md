@@ -1,7 +1,7 @@
 ---
 title: ES6+
 order: 8
-category: false
+
 tag:
   - Javascript高阶
   - ES6+

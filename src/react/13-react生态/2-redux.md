@@ -1,7 +1,7 @@
 ---
 title: Redux
 order: 2
-category: false
+
 tag:
   - 全局状态管理
   - Redux

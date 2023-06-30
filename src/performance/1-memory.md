@@ -1,7 +1,7 @@
 ---
 title: 内存优化
 order: 1
-category: false
+
 tag:
   - 内存管理
   - 垃圾回收

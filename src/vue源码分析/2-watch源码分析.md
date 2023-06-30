@@ -1,7 +1,7 @@
 ---
 title: watch源码解析
 order: 2
-category: false
+
 tag:
   - 响应式原理
   - watch

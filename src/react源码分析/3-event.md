@@ -1,7 +1,7 @@
 ---
 title: 事件系统
 order: 3
-category: false
+
 tag:
   - 事件系统
   - 事件委派

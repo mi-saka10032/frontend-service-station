@@ -1,7 +1,7 @@
 ---
 title: JSX结构
 order: 1
-category: false
+
 tag:
   - JSX
   - babel

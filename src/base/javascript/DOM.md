@@ -1,7 +1,7 @@
 ---
 title: DOM
 order: 4
-category: false
+
 tag:
   - Javascript基础
   - 浏览器对象

@@ -1,7 +1,7 @@
 ---
 title: Nuxt
 order: 2
-category: false
+
 tag:
   - Vue
   - Nuxt

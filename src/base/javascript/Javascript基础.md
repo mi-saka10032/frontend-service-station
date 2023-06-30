@@ -1,7 +1,7 @@
 ---
 title: Javascript基础
 order: 1
-category: false
+
 tag:
   - Javascript基础
   - JS基本语法

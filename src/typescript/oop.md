@@ -1,7 +1,7 @@
 ---
 title: 面向对象
 order: 2
-category: false
+
 tag:
   - 面向对象
   - 类、接口

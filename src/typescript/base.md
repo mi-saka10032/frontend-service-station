@@ -1,7 +1,7 @@
 ---
 title: 基础入门
 order: 1
-category: false
+
 tag:
   - 环境构建
   - 基础

@@ -1,7 +1,7 @@
 ---
 title: WebComponents
 order: 5
-category: false
+
 tag:
   - WebComponents
   - 最新微前端方案

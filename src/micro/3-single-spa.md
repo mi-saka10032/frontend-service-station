@@ -1,7 +1,7 @@
 ---
 title: Single-SPA协议
 order: 3
-category: false
+
 tag:
   - 微前端方案
   - single-SPA

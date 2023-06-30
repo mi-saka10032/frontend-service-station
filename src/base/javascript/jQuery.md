@@ -1,7 +1,7 @@
 ---
 title: jQuery
 order: 6
-category: false
+
 tag:
   - Javascript库
   - 简化语法

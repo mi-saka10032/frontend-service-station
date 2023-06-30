@@ -1,7 +1,7 @@
 ---
 title: computed源码解析
 order: 3
-category: false
+
 tag:
   - 响应式原理
   - 惰性缓存

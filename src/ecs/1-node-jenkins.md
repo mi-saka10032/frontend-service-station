@@ -1,7 +1,7 @@
 ---
 title: jenkins安装与git项目部署记录
 order: 1
-category: false
+
 ---
 
 最近有一个idea，需要部署一个网易云音乐API用来提供音乐相关数据的查询，而github上正好有一个[网易云音乐API](https://github.com/Binaryify/NeteaseCloudMusicApi)，可以fork过来直接发到我自己的阿里云ECS上作为个人的公共查询服务，现在就记录一下我从阿里云远程环境初始化、jenkins安装和建立发布任务，最后完成在线项目发布运行的过程。

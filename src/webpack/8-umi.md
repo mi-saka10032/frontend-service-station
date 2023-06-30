@@ -1,7 +1,7 @@
 ---
 title: Umi
 order: 8
-category: false
+
 tag:
   - Umi
   - React

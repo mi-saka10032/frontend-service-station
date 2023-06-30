@@ -1,7 +1,7 @@
 ---
 title: AST抽象语法树
 order: 5
-category: false
+
 tag:
   - AST语法树
   - Vue模板引擎

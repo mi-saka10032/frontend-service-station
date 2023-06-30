@@ -1,7 +1,7 @@
 ---
 title: WebWorker
 order: 4
-category: false
+
 tag:
   - WebWorker
   - 多线程JS

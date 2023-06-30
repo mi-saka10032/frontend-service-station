@@ -1,7 +1,7 @@
 ---
 title: 装饰器
 order: 3
-category: false
+
 tag:
   - 装饰器
   - 功能增强

@@ -1,7 +1,7 @@
 ---
 title: MySQL
 order: 9
-category: false
+
 tag:
   - 数据库
   - SQL

@@ -1,7 +1,7 @@
 ---
 title: Nginx
 order: 6
-category: false
+
 tag:
   - Nginx
   - 反向代理

@@ -1,7 +1,7 @@
 ---
 title: Scheduler
 order: 8
-category: false
+
 tag:
   - Scheduler
   - MessageChannel

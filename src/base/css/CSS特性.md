@@ -1,7 +1,7 @@
 ---
 title: CSS特性
 order: 2
-category: false
+
 tag:
   - CSS核心
 ---

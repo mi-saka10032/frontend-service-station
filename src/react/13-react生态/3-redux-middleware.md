@@ -1,7 +1,7 @@
 ---
 title: Redux异步中间件
 order: 3
-category: false
+
 tag:
   - Redux
   - 异步中间件

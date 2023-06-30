@@ -1,7 +1,7 @@
 ---
 title: 其他API
 order: 4
-category: false
+
 tag:
   - 响应式数据转化
   - 其他API

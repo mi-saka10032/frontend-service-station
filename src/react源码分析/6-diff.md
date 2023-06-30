@@ -1,7 +1,7 @@
 ---
 title: Diff
 order: 6
-category: false
+
 tag:
   - ReactDiff
   - 单节点diff

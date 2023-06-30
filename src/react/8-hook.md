@@ -1,7 +1,7 @@
 ---
 title: Hook
 order: 8
-category: false
+
 tag:
   - Hook
   - 函数式组件

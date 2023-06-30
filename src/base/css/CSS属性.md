@@ -1,7 +1,7 @@
 ---
 title: CSS属性
 order: 3
-category: false
+
 tag:
   - CSS属性
   - 基本属性

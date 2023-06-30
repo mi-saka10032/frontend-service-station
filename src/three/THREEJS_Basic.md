@@ -1,7 +1,7 @@
 ---
 title: THREE基础
 order: 1
-category: false
+
 ---
 
 

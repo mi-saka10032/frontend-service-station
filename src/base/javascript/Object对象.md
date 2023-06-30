@@ -1,7 +1,7 @@
 ---
 title: Object对象
 order: 2
-category: false
+
 tag:
   - Javascript基础
   - Object对象

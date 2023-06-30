@@ -1,7 +1,7 @@
 ---
 title: 基础API与扩展
 order: 8
-category: false
+
 tag:
   - 单文件渲染
   - ref

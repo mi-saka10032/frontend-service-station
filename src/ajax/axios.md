@@ -1,7 +1,7 @@
 ---
 title: axios
 order: 2
-category: false
+
 tag:
   - Ajax库
   - 请求拦截

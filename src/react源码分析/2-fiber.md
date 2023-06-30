@@ -1,7 +1,7 @@
 ---
 title: Fiber
 order: 2
-category: false
+
 tag:
   - Fiber
   - 链表

@@ -1,7 +1,7 @@
 ---
 title: Mobx
 order: 4
-category: false
+
 tag:
   - 全局状态管理
   - Mobx

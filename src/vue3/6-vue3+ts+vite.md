@@ -1,7 +1,7 @@
 ---
 title: Vue3+TS+Vite
 order: 6
-category: false
+
 tag:
   - Vue3
   - TypeScript

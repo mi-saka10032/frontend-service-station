@@ -1,7 +1,7 @@
 ---
 title: AJAX
 order: 1
-category: false
+
 tag:
   - Ajax
   - HTTP协议

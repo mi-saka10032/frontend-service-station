@@ -1,7 +1,7 @@
 ---
 title: 前端缓存技术
 order: 5
-category: false
+
 tag:
   - HTTP缓存
   - 浏览器缓存
