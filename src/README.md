@@ -104,6 +104,11 @@ features:
     icon: snow
     details: 基础场景建立、几何体/场景/材质等属性整理
     link: /three/THREEJS_Basic.md
+
+  - title: 阿里云ECS操作记录
+    icon: linux
+    details: 阿里云ECS、jenkins、docker
+    link: /ecs/1-node-jenkins.md
 copyright: false
 footer: false
 ---
