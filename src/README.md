@@ -109,6 +109,11 @@ features:
     icon: linux
     details: 阿里云ECS、jenkins、docker
     link: /ecs/1-node-jenkins.md
+
+  - title: MidwayJS
+    icon: module
+    details: 后端数据模型、企业级后端框架MidwayJS模板、MVC封装、前后端类型同步
+    link: /midway/1-model.md
 copyright: false
 footer: false
 ---

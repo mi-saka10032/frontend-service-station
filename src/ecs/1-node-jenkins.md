@@ -1,6 +1,10 @@
 ---
 title: jenkins安装与项目部署
 order: 1
+tag:
+    - jenkins初始化
+    - pipeline流水线
+    - docker部署
 ---
 
 最近有一个 idea，需要部署一个网易云音乐 API 用来提供音乐相关数据的查询，而 github 上正好有一个[网易云音乐 API](https://github.com/Binaryify/NeteaseCloudMusicApi)，可以 fork 过来直接发到我自己的阿里云 ECS 上作为个人的公共查询服务，现在就记录一下我从阿里云远程环境初始化、jenkins 安装和建立发布任务，最后完成在线项目发布运行的过程。
