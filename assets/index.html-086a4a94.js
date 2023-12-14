@@ -1,0 +1,1 @@
+import{_ as t,Y as c,Z as n,$ as e,a0 as o}from"./framework-bb209140.js";const s={},_=e("p",null,[o("芝士"),e("code",null,"Dart")],-1),a=[_];function r(l,d){return c(),n("div",null,a)}const f=t(s,[["render",r],["__file","index.html.vue"]]);export{f as default};
