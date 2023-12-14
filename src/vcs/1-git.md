@@ -1,9 +1,10 @@
 ---
 title: Git
 icon: git
+order: 1
 category:
-  - AJAX
-  - axios
+  - VCS
+  - Git
 ---
 
 ## 版本控制

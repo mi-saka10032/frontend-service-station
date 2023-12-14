@@ -35,10 +35,10 @@ features:
     details: AJAX、HTTP协议、axios
     link: /ajax/AJAX.md
 
-  - title: Git
+  - title: Git&Repo
     icon: git
-    details: Git
-    link: /git.md
+    details: Git、Monolithic、Multirepo、Monorepo
+    link: /vcs/1-git.md
 
   - title: Node
     icon: nodeJS
