@@ -2,9 +2,9 @@
 title: jenkins安装与项目部署
 order: 1
 tag:
-    - jenkins初始化
-    - pipeline流水线
-    - docker部署
+  - jenkins初始化
+  - pipeline流水线
+  - docker部署
 ---
 
 最近有一个 idea，需要部署一个网易云音乐 API 用来提供音乐相关数据的查询，而 github 上正好有一个[网易云音乐 API](https://github.com/Binaryify/NeteaseCloudMusicApi)，可以 fork 过来直接发到我自己的阿里云 ECS 上作为个人的公共查询服务，现在就记录一下我从阿里云远程环境初始化、jenkins 安装和建立发布任务，最后完成在线项目发布运行的过程。
@@ -199,7 +199,7 @@ git --version
 
 ![git-v](https://misaka10032.oss-cn-chengdu.aliyuncs.com/ecs/git-v.png)
 
-### 创建 jenkins 任务
+### 创建 Docker 脚本
 
 github 仓库已经建好，为个人使用的私库，仓库搭建过程不再赘述，直接进入 jenkins 任务创建环节
 
@@ -277,6 +277,6 @@ pipeline {
 
 部署成功后，注意设置这个部署端口的[安全组](#设置安全组)，以允许外网访问
 
-至此，阿里云ECS的CI/CD就完成了，通过公网IP+部署端口号即可访问这个服务。为了保密公网ip，地址栏就不粘贴了
+至此，阿里云 ECS 的 CI/CD 就完成了，通过公网 IP+部署端口号即可访问这个服务。为了保密公网 ip，地址栏就不粘贴了
 
 ![阿里云音乐API外网访问](https://misaka10032.oss-cn-chengdu.aliyuncs.com/ecs/netease-music-visit.png)

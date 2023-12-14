@@ -2177,7 +2177,7 @@ typeorm: {
       port: process.env.MYSQL_PORT,
       username: process.env.MYSQL_USERNAME,
       password: process.env.MYSQL_PASSWORD,
-      database: 'midway_boot',
+      database: 'music_manage_system',
       synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true
       logging: true,
       entities: [User],
@@ -2234,139 +2234,97 @@ ENTRYPOINT ["npm", "run", "start"]
 
 ### 使用 Jenkins CI/CD
 
-编写部署脚本 `/opt/services/deploy.sh`
+因为我的云服务器内存很小，Docker运行会OOM，所以使用node环境直接部署。
 
-```sh
-#!/bin/sh
+Docker环境的Jenkins流水线参考[Docker流水线脚本](../ecs/1-node-jenkins.html#创建-docker-脚本)
 
-#./deploy.sh -n hi-mall -v 1.0 -R hiauth -p 8182:8182
+使用Jenkins前，注意在云服务器上预安装Java11、Jenkins、Node、npm、pm2等环境。
 
-url='bestaone'
+**创建 Jenkins 任务**
 
-name=""
-version="1.0"
-registry="hlll"
-portMapping=""
-opts=""
-envFile=""
+添加一个流水线风格的任务，编写流水线脚本如下
 
-function useage () {
-     echo "Usage: -n name -v version -p portMapping [-R registry] [-e envFile] [-o opts]"
-     echo "-n name, app name"
-     echo "-v version, deploy image version"
-     echo "-p portMapping, container port mapping"
-     echo "-R registry, image registry"
-     echo "-e envFile, Env File"
-     echo "-o opts, JVM OPST"
-     exit 1
+```groovy
+pipeline {
+    agent any
+
+    // 初始化env文件所需环境变量，，如果私有git仓库上传了.env文件则不需要这些变量
+    parameters {
+        string(name: 'MYSQL_PASSWORD', defaultValue: 'your_mysql_password', description: 'MYSQL_PASSWORD')
+        string(name: 'OSS_ACCESSKEY_ID', defaultValue: '阿里云OSS-ID', description: 'OSS_ACCESSKEY_ID')
+        string(name: 'OSS_ACESSKEY_SECRET', defaultValue: '阿里云OSS-SECRET', description: 'OSS_ACESSKEY_SECRET')
+        string(name: 'OSS_BUCKET_NAME', defaultValue: 'misaka10032', description: 'OSS_BUCKET_NAME')
+        string(name: 'OSS_ENDPOINT', defaultValue: 'oss-cn-chengdu.aliyuncs.com', description: 'OSS_ENDPOINT')
+        string(name: 'OSS_ROLEARN', defaultValue: '阿里云OSS-ROLEARN', description: 'OSS_ROLEARN')
+        string(name: 'OSS_PREFIX', defaultValue: 'https://misaka10032.oss-cn-chengdu.aliyuncs.com', description: 'OSS_PREFIX')
+    }
+
+    stages {
+        // 拉取github仓库代码
+        stage('Checkout') {
+            steps {
+                git credentialsId: 'your_jenkins_securityId',
+                    url: 'ssh_git_repository',
+                    branch: 'main'
+                // 初始化和更新 Git 子模块
+                sh 'git submodule init'
+                sh 'git submodule update --recursive'
+            }
+        }
+
+        // 初始化env环境文件，如果私有git仓库上传了这个文件则不需要这个步骤
+        stage('ENV') {
+            steps {
+            sh '''
+            rm -f .env
+cat>.env<<EOF
+MYSQL_HOST=localhost
+MYSQL_USERNAME=root
+MYSQL_PASSWORD=$MYSQL_PASSWORD
+MYSQL_PORT=3306
+REDIS_HOST=localhost
+REDIS_PORT=6379
+OSS_ACCESSKEY_ID=$OSS_ACCESSKEY_ID
+OSS_ACESSKEY_SECRET=$OSS_ACESSKEY_SECRET
+OSS_BUCKET_NAME=$OSS_BUCKET_NAME
+OSS_ENDPOINT=$OSS_ENDPOINT
+OSS_ROLEARN=$OSS_ROLEARN
+OSS_PREFIX=$OSS_PREFIX
+EOF
+            cat .env
+            '''
+            echo "create .env success"
+            }
+        }
+
+        // 安装依赖
+        stage('Install') {
+            steps {
+               sh "npm install"
+            }
+        }
+
+        // 项目打包
+        stage("Build") {
+            steps {
+                sh "npm run build"
+            }
+        }
+
+        // 项目部署
+        stage('Deploy') {
+            steps {
+                script {
+                    try {
+                        sh "pm2 stop all"
+                    } catch (Exception e) {
+                        echo "No pm2 start"
+                    } finally {
+                        sh "npm run pmstart"
+                    }
+                }
+            }
+        }
+    }
 }
-
-while getopts "h:n:v:R:V:p:N:e:o:P:" option
-do
-    case "${option}" in
-        n)
-            name=${OPTARG} ;;
-        v)
-            version=${OPTARG} ;;
-                p)
-            portMapping+=" -p "${OPTARG} ;;
-        R)
-            registry=${OPTARG} ;;
-                e)
-            envFile=${OPTARG} ;;
-        o)
-            opts=${OPTARG} ;;
-        \?)
-            useage ;;
-    esac
-done
-
-if [ "${name}" == "" ] ; then
-        useage ;
-fi
-
-if [ "${portMapping}" == "" ] ; then
-        useage ;
-fi
-
-echo "--------------------------------------------------------------------------"
-
-echo "Name              = ${name}"
-echo "Version           = ${version}"
-echo "Opts              = ${opts}"
-echo "Registry          = ${registry}"
-echo "PortMapping       = ${portMapping}"
-echo "EnvFile           = ${envFile}"
-
-runcommand=""
-
-echo "Deploy ${name}:${version}"
-
-echo "step 1 : shoutdown and remove container"
-docker ps -a --filter "name=$name" | awk '{print $1}'| while read cid
-do
-        if [ $cid != 'CONTAINER' ];then
-                echo docker rm -f $cid
-                docker rm -f $cid
-        fi
-done
-
-echo "step 2 : remove image"
-echo docker rmi $url/$registry/$name:$version
-docker rmi $url/$registry/$name:$version
-
-echo "step 3 : build new image"
-echo docker build -t $url/$registry/$name:$version /opt/services/$name
-docker build -t $url/$registry/$name:$version /opt/services/$name
-
-echo "step 4 : run container"
-
-if [ "${name}" != "" ] ; then
-        runcommand="${runcommand} --name ${name} "
-fi
-
-if [ "${portMapping}" != "" ] ; then
-        runcommand="${runcommand} ${portMapping} "
-fi
-
-if [ "${volume}" != "" ] ; then
-        runcommand="${runcommand} -v ${volume} "
-fi
-
-if [ "${envFile}" != "" ] ; then
-        runcommand="${runcommand} --env-file ${envFile} "
-fi
-
-if [ "${opts}" != "" ] ; then
-        runcommand="${runcommand} -e 'JAVA_OPTS=${opts}' "
-fi
-
-echo docker run -d $runcommand $url/$registry/$name:$version
-docker run -d $runcommand $url/$registry/$name:$version
-
-echo "step 5 : check deploy"
-echo docker images
-docker images
-echo docker ps -a
-docker ps -a
-
-echo "${name}:${version} deploy over!"
 ```
-
-创建 Jenkins 任务
-
-添加一个自由风格的任务，添加好源码地址(git)，然后添加执行 shell。
-
-```shell
-# 切换目录
-cd /root/.jenkins/workspace/midway-boot
-# 删除旧文件
-rm -rf /opt/services/midway-boot/*
-# 复制新文件
-cp -rf /root/.jenkins/workspace/midway-boot/* 	/opt/services/midway-boot/
-
-# 发布
-/opt/services/deploy.sh -n midway-boot -R midway -p 10100:7001 -e /opt/services/.env
-```
-
-**在这之前需要先创建目录 `/opt/services/midway-boot`，以及添加环境变量配置文件 `/opt/services/.env`**
