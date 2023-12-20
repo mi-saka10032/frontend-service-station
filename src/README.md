@@ -22,7 +22,7 @@ features:
 
   - title: CSS
     icon: css
-    details: CSS基础、CSS属性、CSS特性、页面布局与移动端布局
+    details: CSS基础、CSS属性、CSS特性、页面布局与移动端布局、原子化CSS
     link: /base/css/CSS基础.md
 
   - title: Javascript
