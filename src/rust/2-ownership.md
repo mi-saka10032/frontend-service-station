@@ -243,7 +243,7 @@ fn calculate_length(s: &String) -> usize {
 
 **引用变量不可修改，默认不可变**
 
-````rust
+```rust
 fn main() {
   let s1 = String::from("Hello");
   // s1向calculate_length借用所有权，而非所有权move
@@ -259,6 +259,7 @@ fn calculate_length(s: &String) -> usize {
   s.len()
   // 销毁s的所有权，但s引用的s1不受影响，因为s并不拥有s1的所有权
 }
+```
 
 ### 可变引用
 
@@ -277,6 +278,7 @@ fn calculate_length(s: &mut String) -> usize {
   s.len()
   // 销毁s的所有权，但s引用的s1不受影响，因为s并不拥有s1的所有权
 }
+```
 
 可变引用有一个重要限制：在特定作用域内，对某一块数据，只能有一个可变的引用
 
@@ -288,7 +290,7 @@ fn main() {
 
   println!("The length of '{}' is {}.", s1, s2);
 }
-````
+```
 
 运行结果：
 

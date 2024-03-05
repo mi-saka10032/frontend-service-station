@@ -1,6 +1,6 @@
 ---
 title: Rust
-icon: git
+icon: c
 index: false
 category:
   - Rust
