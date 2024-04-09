@@ -313,6 +313,7 @@ fn main() {
 - String类型，为了支持可变性，需要在heap上分配内存来保存编译时未知的文本内容：
   - 操作系统必须在运行时请求内存，这步通过调用`String::from`来实现
 
+更详细的内容见：[集合：String](./6-collection.html#string)
 
 ## 函数
 

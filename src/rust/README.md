@@ -1,6 +1,6 @@
 ---
 title: Rust
-icon: c
+icon: /rust.svg
 index: false
 category:
   - Rust
