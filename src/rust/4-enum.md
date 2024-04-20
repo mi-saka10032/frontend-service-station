@@ -138,7 +138,7 @@ fn main() {
 
 - 若想使用`Option<T>`中的 T，必须将它转换为正确的 T
 
-## 控制流运算符
+## 匹配模式
 
 ### 定义
 
@@ -226,7 +226,134 @@ fn plus_one(x: Option<i32>) -> Option<i32> {
 }
 ```
 
-### default
+### 匹配命名变量
+
+命名的变量是可匹配任何值的无可辩驳模式
+
+```rust
+fn main() {
+  let x = Some(5);
+  let y = 10;
+
+  match x {
+    Some(50) => println!("Got 50"),
+    Some(y) => println!("Matched, y = {:?}", y),
+    _ println!("Default case, x = {:?}", x),
+  }
+
+  println!("at the end: x = {:?}, y = {:?}", x, y);
+}
+```
+
+### 多重模式
+
+在 match 表达式中，使用`|`语法可以匹配多种模式
+
+```rust
+fn main() {
+  let x = 1;
+
+  match x {
+    1 | 2 => println!("one or two"),
+    3 => println!("three"),
+    _ => println("anything"),
+  }
+}
+```
+
+### 范围匹配
+
+使用 `..=` 来匹配某个范围的值
+
+```rust
+fn main() {
+  let x = 5;
+  match x {
+    1 ..=5 => println!("one through five"),
+    _ => println!("something else"),
+  }
+
+  let x = 'c';
+  match x {
+    'a' ..='j' => println!("early ASCII letter"),
+    'k' ..='z' => println!("late ASCII letter"),
+    _ => println!("something else"),
+  }
+}
+```
+
+### 解构匹配
+
+可以使用模式来解构 struct enum tuple，从而引用这些类型值的不同部分
+
+```rust
+struct Point {
+  x: i32,
+  y: i32,
+}
+
+fn main() {
+  let p = Point { x: 0, y: 7 };
+
+  let Point { x: a, y: b } = p;
+  assert_eq!(0, a);
+  assert_eq!(7, b);
+
+  match p {
+    Point { x, y: 0 } => println!("On the x axis at {}", x),
+    Point { x: 0, y } => println!("On the y axis at {}", y),
+    Point { x, y } => println!("On neither axis: ({}, {})", x, y),
+  }
+}
+```
+
+### 匹配守卫
+
+match守卫就是match arm模式后额外的if条件，想要匹配该条件也必须满足
+
+match守卫适用于比单独的模式更复杂的场景
+
+```rust
+fn main() {
+  let num = Some(4);
+
+  match num {
+    Some(x) if x < 5 => println!("less than five: {}", x),
+    Some(x) => println!("{}", x),
+    None => (),
+  }
+}
+```
+
+### `@`绑定
+
+`@`符号让我们可以创建一个变量，该变量可以在测试某个值是否与模式匹配的同时保存该值
+
+```rust
+enum Message {
+  Hello { id: i32 }
+}
+
+fn main() {
+  let msg = Message::Hello { id: 5 };
+
+  match msg {
+    Message::Hello {
+      id: id_variable @ 3..=7,
+    } => {
+        println!("Found an id in range: {}", id_variable) 
+    }
+    Message::Hello { id: 10..=12 } => {
+        println!("Found an id another range") 
+    }
+    Message::Hello { id } => {
+        println!("Found some other id: {}", id) 
+    }
+  }
+}
+```
+
+### 默认匹配
 
 match 匹配必须穷举所有的可能
 
@@ -247,7 +374,22 @@ fn main() {
 
 `_`通配符必须放在 match 的最下面，如果不希望输出任何内容，则以`_ => ()`返回空元组的形式表示无事发生
 
-## if/let
+### 剩余忽略
+
+使用 .. 来忽略值的剩余部分
+
+```rust
+fn main() {
+  let numbers = (2, 4, 8, 16, 32);
+  match numbers {
+    (first, .., last) => {
+      println!("Some numbers: {}, {}", first, last);
+    }
+  }
+}
+```
+
+### if/let
 
 if/let 关键字用于处理只关心一种匹配而忽略其它匹配的情况
 
@@ -274,3 +416,32 @@ fn main() {
   }
 }
 ```
+
+### while/let
+
+只要模式继续满足匹配的条件，那它允许 while 循环一直运行
+
+```rust
+fn main() {
+  let mut stack = Vec::new();
+
+  stack.push(1);
+  stack.push(2);
+  stack.push(3);
+
+  while let Some(top) = stack.pop() {
+    println!("{}", top);
+  }
+}
+```
+
+### 两种形式
+
+匹配模式有两种形式：可辩驳的、无可辩驳的
+
+能匹配任何可能传递的值的模式：无可辩驳的，例如`let x = 5;`
+
+对某些可能的值，无法进行匹配的模式：可辩驳的，例如`if let Some(x) = a_value`
+
+- 函数参数、let 语句、for 循环只接受无可辩驳的模式
+- if let 和 while let 接受可辩驳和无可辩驳的模式

@@ -350,6 +350,60 @@ impl<T: fmt::Display> ToString for T {
 }
 ```
 
+### 关联类型
+
+关联类型（associated type）是 trait 中的类型占位符，它可以用于 trait 的方法签名中，可以定义出包含某些类型的 trait，而在实现前无需知道这些类型是什么
+
+```rust
+pub trait Iterator {
+  type Item;
+
+  fn next(&mut self) -> Option<Self::Item>;
+}
+
+pub trait Iterator2<T> {
+  fn next(&mut self) -> Option<T>;
+}
+
+struct Counter {}
+
+impl Iterator for Counter {
+  type Item = u32;
+
+  fn next(&mut self) -> Options<Self::Item> { None }
+}
+
+impl Iterator2<String> for Counter {
+  fn next(&mut self) -> Options<String> { None }
+}
+
+impl Iterator2<u32> for Counter {
+  fn next(&mut self) -> Options<u32> { None }
+}
+```
+
+关联类型和泛型区别：
+
+| 泛型                             | 关联类型                         |
+| :------------------------------- | :------------------------------- |
+| 每次实现 trait 时标注类型        | 无需标注类型                     |
+| 可以为一个类型多次实现某个 trait | 无法为单个类型多次实现某个 trait |
+
+### supertrait
+
+需要在一个 trait 中使用其它 trait 的功能：
+
+- 需要被依赖的 trait 也被实现
+- 那个被间接依赖的 trait 就是当前 trait 的 supertrait（类似 trait 继承）
+
+```rust
+use std::fmt;
+
+trait OutlinePrint: fmt::Display {
+  // self可使用.to_string()方法了
+}
+```
+
 ## 生命周期
 
 Rust 的每个引用都有自己的生命周期
@@ -583,7 +637,7 @@ impl<'a> ImportantExcerpt<'a> {
 
 为引用指定的`'static`生命周期前要三思：**是否需要引用在程序整个生命周期内都存活**
 
-## 综合示例
+### 综合示例
 
 ```rust
 use std::fmt::Display;
@@ -603,3 +657,406 @@ where
 
 fn main() {}
 ```
+
+## UnsafeRust
+
+Rust 隐藏着第二个语言，它没有强制内存安全保证：Unsafe Rust
+
+和普通的 Rust 一样，但提供了额外的能力
+
+Unsafe Rust 存在的原因：
+
+1. 静态分析是保守的。使用 Unsafe Rust：我知道我自己在做什么，并愿意承担相应风险
+2. 计算机硬件本身就是不安全的，Rust 需要能够进行底层系统变成
+
+### 关键字
+
+使用 unsafe 关键字切换到 unsafe Rust，将开启一个块，里面放着 unsafe 代码，并允许以下四种 unsafe 操作：
+
+1. 解引用原始指针
+2. 调用 unsafe 函数或方法
+3. 访问或修改可变的静态变量
+4. 实现 unsafe trait
+
+注意：
+
+1. unsafe 并没有关闭借用检查或停用其它安全检查
+2. 任何内存安全相关的错误必须留在 unsafe 块里
+3. 尽可能隔离 unsafe 代码，最好将其封装在安全的抽象里，提供安全的 API
+
+### 解引用原始指针
+
+原始指针：
+
+- 可变的：`*mut T`
+- 不可变的：`*const T`。意味着指针在解引用后不能直接对其进行赋值
+- 注意：主力的`*`不是解引用符号，它是类型名的一部分
+
+与引用不同，原始指针具备以下特性：
+
+- 允许通过同时具有不可变和可变指针或多个指向同一位置的可变指针来忽略借用规则
+- 无法保证能指向合理的内存
+- 允许为 null
+- 不实现任何自动清理
+
+通过放弃保证的安全，解引用原始指针来换取更好的性能/与其它语言或硬件接口的能力
+
+```rust
+fn main() {
+  let mut num = 5;
+
+  let r1 = &num as *const i32;
+  let r2 = &mut num as *mut i32;
+  unsafe {
+    println!("r1: {}", *r1);
+    println!("r2: {}", *r2);
+  }
+  let address = 0x012345usize;
+  let r = address as *const i32;
+  unsafe {
+    println!("r: {}", *r);
+  }
+}
+```
+
+### 创建安全抽象
+
+函数包含 unsafe 代码并不意味着需要将整个函数标记为 unsafe
+
+将 unsafe 代码包裹在安全函数中是一个常见的抽象
+
+### extern
+
+extern 关键字：简化创建和使用外部函数接口(FFI)的过程
+
+外部函数接口（FFI，Foreign Function Interface）：它允许一种编程语言定义函数，并让其它变成语言能调用这些函数
+
+```rust
+extern "C" {
+  fn abs(input: i32) -> i32;
+}
+
+fn main() {
+  unsafe {
+    println!("Absolute value of -3 according to C: {}", abs(-3));
+  }
+}
+```
+
+应用二进制接口（ABI，Application Binary Interface）：定义函数在汇编层的调用方式
+
+"C" ABI 是最常见的 ABI，它遵循 C 语言的 ABI
+
+可以使用 extern 创建接口，其它语言通过它们可以调用 Rust 的函数
+
+在 fn 前添加 extern 关键字，并指定 ABI
+
+还需添加`#[no_mangle]`注解：避免 Rust 在编译时改变它的名称
+
+### 访问或修改可变静态变量
+
+Rust 支持全局变量，但因为所有权机制可能产生某些问题，例如数据竞争
+
+静态变量：
+
+- 静态变量与常量类似
+- 命名：SCREAMING_SNAKE_CASE
+- 必须标注类型
+- 静态变量只能存储`'static`生命周期的引用，无需显式标注
+- 访问不可变静态变量是安全的
+
+```rust
+static mut COUNTER: u32 = 0;
+
+fn add_to_count(inc: u32) {
+  unsafe {
+    COUNTER += inc;
+  }
+}
+
+fn main() {
+  add_to_count();
+
+  unsafe {
+    println!("COUNTER: {}", COUNTER);
+  }
+}
+```
+
+### 实现不安全`trait`
+
+当某个 trait 中存在至少一个方法拥有编译器无法校验的不安全因素时，就称这个 trait 是不安全的
+
+声明 unsafe trait：在定义前添加 unsafe 关键字。该 trait 只能在 unsafe 代码块中实现
+
+```rust
+unsafe trait Foo {}
+
+unsafe impl Foo for i32 {}
+
+fn main() {
+
+}
+```
+
+### 何时使用`unsafe`
+
+1. 编译器无法保证内存安全，保证 unsafe 代码正确并不简单
+2. 有充足理由使用 unsafe 代码时，就可以这样做
+3. 通过显式标记 unsafe，可以在出现问题时轻松定位
+
+## 高级类型
+
+### newtype
+
+newtype 模式：
+
+- 用来静态地保证各种值之间不会混淆并表明值的单位
+- 为类型的某些细节提供抽象能力
+- 通过轻量级的封装来隐藏内部实现细节
+
+```rust
+type Thunk = Box<dyn Fn() + Send + 'static'>;
+
+fn takes_long_type(f: Thunk) {
+  //
+}
+
+fn returns_long_type() -> Thunk {
+  Box::new(|| println!("hi"))
+}
+
+fn main() {
+  let f: Thunk = Box::new(|| println!("hi"));
+}
+```
+
+### never
+
+有一个名为`!`的特殊类型：它没有任何值，行话成为空类型（empty type）
+
+我们倾向于叫它 never 类型，因为它在不返回的函数中充当返回类型
+
+不返回值的函数也被称作发散函数（diverging function）
+
+类似 typescript 的 [never](../typescript/base.html#never) 类型，表示函数不可达，如必定发生错误的函数、死循环函数
+
+### DST
+
+Rust 需要在编译时确定为一个特定类型的值分配多少空间
+
+动态大小的类型（Dynamically Sized Types DST）概念：
+
+编写代码时使用只有在运行时才能确定大小的值
+
+str 是动态大小的类型（注意不是`&str`）：只有运行时才能确定字符串的长度
+
+`&str`：存储 str 的地址和 str 的长度
+
+另一种动态大小的类型是 trait
+
+每个 trait 都是一个动态大小的类型，可以通过名称对其进行引用
+
+为了将 trait 用作 trait 对象，必须将它放置在某种指针之后
+
+如：`&dyn Trait`或`Box<dyn Trait>`（`Rc<dyn Trait>`）之后
+
+为了处理动态大小的类型，Rust 提供了一个 SizedTrait 来确定一个类型的大小在编译时是否已知：
+
+- 编译时可计算出大小的类型会自动实现这一 trait
+- Rust 还会为每一个泛型函数隐式地添加 Sized 约束
+
+```rust
+fn generic<T>(t: T) {
+}
+
+// fn generic<T: Sized>(t: T) {
+// }
+
+// fn generic<T: ？Sized>(t: &T) {
+// }
+
+fn main() {}
+```
+
+默认情况下，泛型函数只能被用于编译时已经知道大小的类型，可以通过特殊语法`?Sized`解除这一限制
+
+## 函数指针
+
+可以将函数传递给其它函数
+
+函数在传递过程中会被强制转换成 fn 类型
+
+```rust
+fn add_one(x: i32) -> {
+  x + 1
+}
+
+fn do_twice(f: fn(i32) -> i32, arg: i32) -> i32 {
+  f(arg) + f(arg)
+}
+
+fn main() {
+  let answer = do_twice(add_one, 5);
+
+  println!("The answer is: {}", answer);
+}
+```
+
+### 函数指针与闭包的区别
+
+- fn 是一个类型，不是一个 trait
+- 可以直接指定 fn 为参数类型，不用声明一个以 Fn trait 为约束的泛型参数
+- 函数指针实现了全部 3 中闭包 trait（Fn, FnMut, FnOnce）
+
+因为总是可以把函数指针用作参数传递给一个接收闭包的函数，所以我们更倾向于搭配闭包 trait 的泛型来编写函数：可以同时接收闭包和普通函数
+
+### 返回闭包
+
+闭包使用 trait 进行表达，无法在函数中直接返回一个闭包，可以将一个实现了该 trait 的具体类型作为返回值
+
+```rust
+// 编译失败
+// fn returns_closure() -> Fn(i32) -> i32 {
+//   |x| x + 1
+// }
+
+fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
+  Box::new(|x| x + 1)
+}
+
+fn main() {
+    let closure = returns_closure();
+    let res = closure(10);
+    println!("res: {}", res);
+}
+```
+
+## macro
+
+宏在 Rust 里指的是一组相关特性的集合称谓：
+
+- 使用`macro_rules!`构建的声明宏（declarative macro）
+- 3 种过程宏
+  1. 自定义`#[derive]`宏，用于 struct 或 enum，可以为其指定随 derive 属性添加的代码
+  2. 类似属性的宏，在任何条目上添加自定义属性
+  3. 类似函数的宏，看起来像函数调用，对其指定为参数的 token 进行操作
+
+### 函数与宏的差别
+
+本质上，宏是用来编写可以生成其它代码的代码（元编程，meta programming）
+
+函数在定义签名时，必须声明参数的个数和类型，宏可处理可变的参数
+
+编译器会在解释代码前展开宏
+
+宏的定义比函数复杂得多，难以阅读、理解、维护
+
+在某个文件调用宏时，必须提前定义宏或将宏引入当前作用域。
+
+函数可以在任何位置定义并在任何位置使用
+
+### 声明宏
+
+`macro_rules!`声明宏现在可能已弃用，需注意
+
+声明宏类似 match 的模式匹配，需要使用`macro_rules!`关键字
+
+```rust
+// let v: Vec<u32> = vec![1, 2, 3];
+
+// 这是vec!宏的简化定义
+#[macro_export]
+macro_rules! vec {
+( $( $x:expr ),* ) => {
+    {
+      let mut temp_vec = Vec::new();
+      $(
+        temp_vec.push($x);
+      )*
+      temp_vec
+    }
+  }
+}
+```
+
+### 过程宏
+
+过程宏一般指的是基于属性来生成代码的过程宏，这种形式更像函数
+
+- 接收并操作输入的 Rust 代码
+- 生成另外一些 Rust 代码作为结果
+
+一般有三种过程宏：
+
+1. 自定义派生
+2. 属性宏
+3. 函数宏
+
+创建过程宏时，注意宏定义必须单独放在它们自己的包中，并使用特殊的包类型
+
+#### 自定义派生
+
+例子：自定义 derive 宏`#[derive(Hellomacro)]`，得到 hello_macro 的默认实现
+
+先新建一个 Cargo 项目
+
+```toml
+[package]
+name = "hello_macro_derive"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "0.14.4"
+quote = "0.6.3"
+```
+
+```rust
+// lib.rs
+extern crate proc_macro;
+
+use crate::proc_macro::TokenStream;
+use quote::quote;
+use syn;
+
+#[proc_macro_derive(HelloMacro)]
+pub fn hello_macro_derive(input: TokenStream) -> TokenStream {
+  let ast = syn::parse(input).unwrap();
+
+  impl_hello_macro(&ast)
+}
+
+fn impl_hello_macro(ast: &syn::DeriveInput) -> TokenStream {
+  let name = &ast.ident;
+  let gen = quote! {
+    impl HelloMacro for #name {
+      fn hello_macro() {
+        println!("Hello, Macro! My name is {}", stringify!(#name));
+      }
+    }
+  };
+  gen.into()
+}
+```
+
+#### 属性宏
+
+属性宏与自定义 derive 宏类似，允许创建新的属性，但不是为 derive 属性生成代码
+
+属性宏更加灵活：derive 只能用于 struct 和 enum，属性宏可以用于任意条目，例如函数
+
+如：MVC 框架常用的路由宏`#[route(GET, "/")]`
+
+#### 函数宏
+
+函数宏定义类似于函数调用的宏，但比普通函数更加灵活
+
+函数宏可以接收 TokenStream 作为参数
+
+与另外两种过程宏一样，在定义中使用 Rust 代码来操作 TokenStream
+
+如：SQL 查询宏`sql!(SELECT * FROM posts WHERE id=1);`
