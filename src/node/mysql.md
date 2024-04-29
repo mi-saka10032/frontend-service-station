@@ -9,7 +9,7 @@ tag:
   - ORM
 ---
 
-该章节仅对 SQL 和 Mysql 做简单介绍
+该章节是在学习 Node 时候对 MySQL 的简单学习，仅对 SQL 和 Mysql 做简单介绍
 
 ## 常见数据库
 

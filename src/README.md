@@ -117,7 +117,7 @@ features:
 
   - title: Rust
     icon: /rust.svg
-    details: 所有权、结构体、错误处理、泛型、trait、Rust生命周期
+    details: 所有权、结构体、错误处理、泛型、trait、Rust生命周期、无畏并发
     link: /rust/1-common.md
 copyright: false
 footer: false
